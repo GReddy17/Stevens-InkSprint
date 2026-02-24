@@ -23,10 +23,10 @@ This project satisfies all course objectives and utilizes the following mandated
     * Workers: Offloads heavy text analysis (word count, readability scores) to background threads to keep the main event loop responsive.
 
 
-    * Next.js (React): Powers the responsive frontend, satisfying the Framework, CSS3, and AJAX requirements.
+    * Next.js (Framework) : Powers the responsive frontend, satisfying the Framework, CSS3, and AJAX requirements.
 
 
-    * NoSQL: A document-based approach for storing complex story data and user histories.
+    * NoSQL(DataBase) : A document-based approach for storing complex story data and user histories.
 
 3. **Independent Technologies (External Services)**
 
