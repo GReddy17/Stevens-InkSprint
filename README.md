@@ -1,55 +1,59 @@
-**The Ink Sprint: A Competitive Writing Tournament Platform**
+# The Ink Sprint: A Competitive Writing Tournament Platform
 
-**Project Overview**
+## Project Overview
 
-The Ink Sprint is a high-concurrency, real-time web application designed for writers to compete in timed "Flash Fiction" challenges. The platform synchronizes tournament lobbies, manages live state across multiple clients, and provides deep-text analysis and searchability for completed works.
+The Ink Sprint is a web application designed for hosting creative writing competitions where participants submit entries within a defined time window (ranging from hours to days), after which submissions are reviewed and winners are selected. The platform will manage contests, user participation, secure submissions, and judging workflows while providing downloadable results for participants.
 
-**Core Technical Requirements** 
+The system aims to create an organized and accessible environment for running writing competitions without requiring manual coordination. Administrators will be able to create contests with prompts and deadlines, participants will submit their work through a guided interface, and judges or administrators will evaluate entries and assign placements.
+
+---
+
+## Core Technical Requirements
 
 This project satisfies all course objectives and utilizes the following mandated technologies:
 
-1. **Primary Backend**
+### 1. Primary Backend
 
-    * Node.js: The core runtime for our API and event orchestration.
+- **Node.js:** The core runtime for our API and application logic.
 
-2. **Course Technologies**
+### 2. Course Technologies
 
-    * Socket.io: Used for real-time room synchronization, broadcasting prompts, and locking editors upon timer expiration.
+- **React:** Used to build the frontend interface, including authentication pages, contest listings, submission forms, and judging dashboards, enabling a dynamic and responsive user experience.
 
+- **GraphQL:** Serves as the API layer between the frontend and backend, managing queries and mutations for contests, submissions, user data, and judging results while allowing flexible data retrieval for different user roles.
 
-    * Redis: Implements a sub-millisecond caching layer for active tournament clocks and "Dirty Draft" recovery to prevent data loss.
+- **Firebase Authentication:** Handles user registration and login, providing secure identity management without requiring custom authentication logic. Verified user identity will be used to control permissions for submissions and judging actions.
 
+### 3. Independent Technologies (External Services)
 
-    * Workers: Offloads heavy text analysis (word count, readability scores) to background threads to keep the main event loop responsive.
+- **Docker:** A containerization platform used to package the application and its dependencies into a consistent environment that runs the same across development machines and deployment systems. This simplifies collaboration and deployment across different operating systems.
 
+- **ImageMagick:** A command-line image processing tool that will be used to programmatically generate downloadable winner certificates using contest data such as participant name, contest title, and date.
 
-    * Next.js (Framework) : Powers the responsive frontend, satisfying the Framework, CSS3, and AJAX requirements.
+---
 
+## Future Roadmap (Post-Graduation)
 
-    * NoSQL(DataBase) : A document-based approach for storing complex story data and user histories.
+- Expanded judging analytics and scoring metrics for competitions.
+- Public contest galleries and search functionality for completed submissions.
+- Optional monetization features for premium or sponsored contests.
 
-3. **Independent Technologies (External Services)**
+---
 
-     * RabbitMQ: A message broker that handles post-tournament asynchronous tasks, such as PDF certificate generation.
+## Feature Set
 
+### 1. Contest Lifecycle Management
 
-     * ElasticSearch: Provides advanced full-text indexing for the story library, allowing for deep-text search by theme or keyword.
+Administrators can create contests with prompts, deadlines, and submission rules. Participants can submit their writing within the allowed time window, and submissions become locked after the deadline passes.
 
-**Future Roadmap (Post-Graduation)**
+### 2. Submission and Judging Workflow
 
-  * AI-Moderation: Deploying a microservice to flag plagiarism or inappropriate content in real-time.
+Judges or administrators can review submissions, assign scores or placements, and select winners through a structured interface designed to simplify evaluation.
 
-  * Global Elo Ranking: Implementing a skill-based matchmaking system stored in Redis to pair writers of similar experience.
+### 3. User Authentication and Security
 
-  * Monetization Engine: Integrating Stripe for "Grand Prize" tournaments with secure entry-fee processing.
+Authentication and authorization are handled through Firebase Authentication, ensuring that only registered users can participate, submit entries, or perform judging actions.
 
-**Feature Set**
+### 4. Automated Result Artifacts
 
-  1. **Real-Time Tournament Lifecycle**
-The core of the application is a synchronized state machine. Using Socket.io, the server broadcasts a "Sync Start" event that triggers the prompt reveal and unlocks the editor for all participants at the exact same millisecond. This prevents any unfair advantage and ensures the competitive integrity of the tournament.
-
-  2. **Persistence & Resilience**
-To meet production standards, the app uses Redis for session-state management. If a writer’s browser fails at minute 14 of a 15-minute sprint, they can refresh and immediately resume writing from their last cached "Dirty Draft" in Redis, which is saved automatically every five seconds.
-
-  3. **Enterprise-Grade Security**
-The platform is protected against XSS and JS Injections by sanitizing all story submissions through a strict Content Security Policy (CSP). Authentication and authorization are handled via Firebase Auth, ensuring that only registered users can participate in competitive tiers.
+Once winners are determined, the system will generate downloadable certificates using ImageMagick, providing participants with tangible results from the competition.
