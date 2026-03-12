@@ -8,6 +8,19 @@ The system aims to create an organized and accessible environment for running wr
 
 ---
 
+## Running the project
+
+Install dependencies:
+
+`npm install`
+
+Start the app:
+
+`npm run dev`
+
+Frontend: http://localhost:5173  
+GraphQL: http://localhost:4000
+
 ## Core Technical Requirements
 
 This project satisfies all course objectives and utilizes the following mandated technologies:
