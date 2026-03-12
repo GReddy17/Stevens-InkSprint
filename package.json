@@ -1,0 +1,14 @@
+{
+  "name": "stevens-ink-sprint",
+  "private": true,
+  "scripts": {
+    "client": "npm run dev --prefix client",
+    "server": "npm run dev --prefix server",
+    "dev": "concurrently -n SERVER,CLIENT -c green,blue \"npm run server\" \"npm run client\"",
+    "install-all": "npm install --prefix client && npm install --prefix server",
+    "postinstall": "npm run install-all"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.0"
+  }
+}
