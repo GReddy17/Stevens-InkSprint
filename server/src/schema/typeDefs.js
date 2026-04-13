@@ -3,13 +3,49 @@ export const typeDefs = `#graphql
     id: ID!
     title: String!
     prompt: String!
-    deadline: String!
+    rules: String
+    startTime: String!
+    endTime: String!
     status: String!
+    createdBy: ID!
+    createdAt: String!
+    updatedAt: String!
+  }
+
+  type User {
+    id: ID!
+    firebaseUid: String!
+    email: String!
+    displayName: String
+    role: String!
+    createdAt: String!
+    updatedAt: String!
+  }
+
+  input CreateContestInput {
+    title: String!
+    prompt: String!
+    rules: String
+    startTime: String!
+    endTime: String!
+    createdBy: ID!
+  }
+
+  input CreateUserInput {
+    firebaseUid: String!
+    email: String!
+    displayName: String
+    role: String
   }
 
   type Query {
     healthCheck: String!
     contests: [Contest!]!
     contest(id: ID!): Contest
+  }
+
+  type Mutation {
+    createContest(input: CreateContestInput!): Contest!
+    createUser(input: CreateUserInput!): User!
   }
 `

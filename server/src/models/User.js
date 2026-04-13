@@ -1,11 +1,11 @@
-const mongoose = require('mongoose');
+import mongoose from 'mongoose'
 
 const userSchema = new mongoose.Schema(
   {
     firebaseUid: {
       type: String,
       required: true,
-      unique: true, 
+      unique: true,
     },
     email: {
       type: String,
@@ -21,12 +21,14 @@ const userSchema = new mongoose.Schema(
       type: String,
       enum: ['ADMIN', 'JUDGE', 'PARTICIPANT'],
       default: 'PARTICIPANT',
-      index: true, 
+      index: true,
     },
   },
   {
-    timestamps: true, 
+    timestamps: true,
   }
-);
+)
 
-module.exports = User;
+const User = mongoose.model('User', userSchema)
+
+export default User

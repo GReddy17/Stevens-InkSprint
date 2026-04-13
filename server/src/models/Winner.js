@@ -1,5 +1,4 @@
-Winner.js
-const mongoose = require('mongoose');
+import mongoose from 'mongoose'
 
 const winnerSchema = new mongoose.Schema(
   {
@@ -13,7 +12,7 @@ const winnerSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Submission',
       required: true,
-      unique: true, 
+      unique: true,
     },
     placement: {
       type: Number,
@@ -21,7 +20,7 @@ const winnerSchema = new mongoose.Schema(
       min: 1,
     },
     certificateUrl: {
-      type: String, 
+      type: String,
     },
     generatedAt: {
       type: Date,
@@ -30,10 +29,10 @@ const winnerSchema = new mongoose.Schema(
   {
     timestamps: true,
   }
-);
+)
 
-winnerSchema.index({ contestId: 1, placement: 1 });
+winnerSchema.index({ contestId: 1, placement: 1 })
 
-const Winner = mongoose.model('Winner', winnerSchema);
+const Winner = mongoose.model('Winner', winnerSchema)
 
-module.exports = Winner;
+export default Winner

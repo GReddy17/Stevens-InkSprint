@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+import mongoose from 'mongoose'
 
 const submissionSchema = new mongoose.Schema(
   {
@@ -16,7 +16,7 @@ const submissionSchema = new mongoose.Schema(
     },
     contentUrl: {
       type: String,
-      required: true, 
+      required: true,
     },
     title: {
       type: String,
@@ -45,10 +45,10 @@ const submissionSchema = new mongoose.Schema(
   {
     timestamps: true,
   }
-);
+)
 
-submissionSchema.index({ contestId: 1, authorId: 1 }, { unique: true });
+submissionSchema.index({ contestId: 1, authorId: 1 }, { unique: true })
 
-const Submission = mongoose.model('Submission', submissionSchema);
+const Submission = mongoose.model('Submission', submissionSchema)
 
-module.exports = Submission;
+export default Submission
