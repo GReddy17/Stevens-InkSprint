@@ -28,7 +28,16 @@ export const resolvers = {
   Mutation: {
     createContest: async (_, args) => {
       try {
-        const { title, prompt, rules, startTime, endTime, createdBy } = args.input
+        const {
+          title,
+          prompt,
+          rules,
+          startTime,
+          endTime,
+          createdBy,
+          votingMode,
+          judges,
+        } = args.input
 
         const newContest = new Contest({
           title,
@@ -37,6 +46,8 @@ export const resolvers = {
           startTime: new Date(startTime),
           endTime: new Date(endTime),
           createdBy,
+          votingMode: votingMode || 'PUBLIC',
+          judges: judges || [],
         })
 
         const savedContest = await newContest.save()
@@ -49,7 +60,7 @@ export const resolvers = {
 
     createUser: async (_, args) => {
       try {
-        const { firebaseUid, email, displayName, role } = args.input
+        const { firebaseUid, email, displayName } = args.input
 
         const existingUser = await User.findOne({
           $or: [{ firebaseUid }, { email }],
@@ -63,7 +74,6 @@ export const resolvers = {
           firebaseUid,
           email,
           displayName,
-          role: role || 'PARTICIPANT',
         })
 
         const savedUser = await newUser.save()

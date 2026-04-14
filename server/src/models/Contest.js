@@ -26,21 +26,35 @@ const contestSchema = new mongoose.Schema(
       type: String,
       enum: ['UPCOMING', 'ACTIVE', 'CLOSED', 'JUDGING', 'COMPLETED'],
       default: 'UPCOMING',
-      index: true, 
+      index: true,
     },
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
       required: true,
-      index: true, 
+      index: true,
+    },
+    votingMode: {
+      type: String,
+      enum: ['PUBLIC', 'PARTICIPANTS_ONLY', 'JUDGES_ONLY'],
+      default: 'PUBLIC',
+      required: true,
+    },
+    judges: {
+      type: [
+        {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: 'User',
+        },
+      ],
+      default: [],
     },
   },
   {
     timestamps: true,
   }
-);
+)
 
-
-const Contest = mongoose.model('Contest', contestSchema);
+const Contest = mongoose.model('Contest', contestSchema)
 
 export default Contest

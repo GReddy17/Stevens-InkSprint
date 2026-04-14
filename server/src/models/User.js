@@ -17,12 +17,6 @@ const userSchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
-    role: {
-      type: String,
-      enum: ['ADMIN', 'JUDGE', 'PARTICIPANT'],
-      default: 'PARTICIPANT',
-      index: true,
-    },
   },
   {
     timestamps: true,

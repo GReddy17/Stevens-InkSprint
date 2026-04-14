@@ -17,25 +17,25 @@ export const typeDefs = `#graphql
     firebaseUid: String!
     email: String!
     displayName: String
-    role: String!
     createdAt: String!
     updatedAt: String!
   }
 
-  input CreateContestInput {
-    title: String!
-    prompt: String!
-    rules: String
-    startTime: String!
-    endTime: String!
-    createdBy: ID!
-  }
+input CreateContestInput {
+  title: String!
+  prompt: String!
+  rules: String
+  startTime: String!
+  endTime: String!
+  createdBy: ID!
+  votingMode: String
+  judges: [ID!]
+}
 
   input CreateUserInput {
     firebaseUid: String!
     email: String!
     displayName: String
-    role: String
   }
 
   type Query {
