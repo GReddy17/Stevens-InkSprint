@@ -4,6 +4,7 @@ export const typeDefs = `#graphql
     title: String!
     prompt: String!
     rules: String
+    wordLimit: Number!
     startTime: String!
     endTime: String!
     status: String!
@@ -25,6 +26,7 @@ input CreateContestInput {
   title: String!
   prompt: String!
   rules: String
+  wordLimit: Number!
   startTime: String!
   endTime: String!
   createdBy: ID!
