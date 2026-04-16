@@ -14,7 +14,7 @@ const contestSchema = new mongoose.Schema(
     rules: {
       type: String,
     },
-    wordLimit :{
+    wordLimit: {
       type: Number,
       enum: [500, 1000, 5000, 10000],
       required: true

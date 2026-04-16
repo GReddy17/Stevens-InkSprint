@@ -1,10 +1,18 @@
 export const typeDefs = `#graphql
+  enum VotingMode {
+    PUBLIC
+    PARTICIPANTS_ONLY
+    JUDGES_ONLY
+  }
+
   type Contest {
     id: ID!
     title: String!
     prompt: String!
     rules: String
-    wordLimit: Number!
+    wordLimit: Int!
+    votingMode: VotingMode!
+    judges: [ID!]!
     startTime: String!
     endTime: String!
     status: String!
@@ -26,12 +34,12 @@ input CreateContestInput {
   title: String!
   prompt: String!
   rules: String
-  wordLimit: Number!
+  wordLimit: Int!
+  votingMode: VotingMode
+  judges: [ID!]
   startTime: String!
   endTime: String!
   createdBy: ID!
-  votingMode: String
-  judges: [ID!]
 }
 
   input CreateUserInput {

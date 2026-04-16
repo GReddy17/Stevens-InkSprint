@@ -11,7 +11,7 @@ export const resolvers = {
         return await Contest.find({})
       } catch (error) {
         console.error('Error fetching contests:', error.message)
-        return mockContests
+        throw new Error('Failed to fetch contests')
       }
     },
 
