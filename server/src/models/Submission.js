@@ -22,15 +22,23 @@ const submissionSchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
+    description: {
+      type: String,
+    },
     submittedAt: {
       type: Date,
       default: Date.now,
       index: true,
     },
-    score: {
+    voteCount: {
       type: Number,
+      default: 0,
       min: 0,
-      max: 10,
+    },
+    totalScore: {
+      type: Number,
+      default: 0,
+      min: 0,
     },
     placement: {
       type: Number,
@@ -38,8 +46,11 @@ const submissionSchema = new mongoose.Schema(
       default: null,
       index: true,
     },
-    feedback: {
+    certificateUrl: {
       type: String,
+    },
+    certificateGeneratedAt: {
+      type: Date,
     },
   },
   {

@@ -24,16 +24,29 @@ const contestSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ['UPCOMING', 'ACTIVE', 'CLOSED', 'JUDGING', 'COMPLETED'],
+      enum: ['UPCOMING', 'ACTIVE', 'CLOSED', 'VOTING', 'JUDGING', 'COMPLETED'],
       default: 'UPCOMING',
-      index: true, 
+      index: true,
     },
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
       required: true,
-      index: true, 
+      index: true,
     },
+    votingType: {
+      type: String,
+      enum: ['EVERYONE', 'JUDGES', 'CREATOR', 'GROUP'],
+      default: 'EVERYONE',
+    },
+    votingDurationHours: {
+      type: Number,
+      default: 48,
+    },
+    votingGroupMemberIds: [{
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+    }],
   },
   {
     timestamps: true,

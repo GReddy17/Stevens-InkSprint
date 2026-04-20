@@ -23,6 +23,11 @@ const userSchema = new mongoose.Schema(
       default: 'PARTICIPANT',
       index: true,
     },
+    votingWeight: {
+      type: Number,
+      default: 1,
+      min: 0,
+    },
   },
   {
     timestamps: true,
