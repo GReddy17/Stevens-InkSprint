@@ -46,6 +46,8 @@ export const typeDefs = `#graphql
     createUser(input: CreateUserInput!): User!
   }
 `
+// TODO - Update the typeDefs to match the models.
+
 /*
 Removed
 'role' from:
