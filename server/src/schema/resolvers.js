@@ -63,7 +63,7 @@ export const resolvers = {
           firebaseUid,
           email,
           displayName,
-          role: role || 'PARTICIPANT',
+          // Removed 'role'
         })
 
         const savedUser = await newUser.save()

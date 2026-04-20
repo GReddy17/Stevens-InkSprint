@@ -16,8 +16,6 @@ export const typeDefs = `#graphql
     id: ID!
     firebaseUid: String!
     email: String!
-    displayName: String
-    role: String!
     createdAt: String!
     updatedAt: String!
   }
@@ -35,7 +33,6 @@ export const typeDefs = `#graphql
     firebaseUid: String!
     email: String!
     displayName: String
-    role: String
   }
 
   type Query {
@@ -49,3 +46,9 @@ export const typeDefs = `#graphql
     createUser(input: CreateUserInput!): User!
   }
 `
+/*
+Removed
+'role' from:
+- type User
+- input CreateUserInput
+*/
