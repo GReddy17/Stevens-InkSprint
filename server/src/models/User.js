@@ -16,18 +16,7 @@ const userSchema = new mongoose.Schema(
     displayName: {
       type: String,
       trim: true,
-    },
-    role: {
-      type: String,
-      enum: ['ADMIN', 'JUDGE', 'PARTICIPANT'],
-      default: 'PARTICIPANT',
-      index: true,
-    },
-    votingWeight: {
-      type: Number,
-      default: 1,
-      min: 0,
-    },
+    }
   },
   {
     timestamps: true,
