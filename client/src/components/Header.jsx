@@ -14,15 +14,9 @@ function Header() {
 					</Link>
 
 					<Link
-						to="/submissions/new"
+						to="/dev"
 						className="text-gray-300 hover:text-white border border-white px-2">
-						Submission Form (Temp Link)
-					</Link>
-
-					<Link
-						to="/submissions/view"
-						className="text-gray-300 hover:text-white border border-white px-2">
-						Mock Submission (Temp Link)
+						Dev Page (Temp Link)
 					</Link>
 
 					<Link
