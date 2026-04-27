@@ -21,6 +21,8 @@ const CREATE_SUBMISSION = gql`
 	mutation CreateSubmission($input: CreateSubmissionInput!) {
 		createSubmission(input: $input) {
 			id
+			contestId
+			authorId
 			title
 			description
 			content
