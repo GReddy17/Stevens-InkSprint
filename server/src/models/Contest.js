@@ -36,7 +36,7 @@ const contestSchema = new mongoose.Schema(
     },
     votingType: {
       type: String,
-      enum: ['EVERYONE', 'JUDGES', 'CREATOR', 'GROUP'],
+      enum: ['EVERYONE', 'JUDGES', 'CREATOR'],
       default: 'EVERYONE',
     },
     votingDurationHours: {

@@ -14,7 +14,7 @@ const submissionSchema = new mongoose.Schema(
       required: true,
       index: true,
     },
-    contentUrl: {
+    content: {
       type: String,
       required: true,
     },
