@@ -14,24 +14,6 @@ export const typeDefs = `#graphql
     CREATOR
   }
 
-  type Contest {
-    id: ID!
-    title: String!
-    prompt: String!
-    rules: String
-    startTime: String!
-    endTime: String!
-    status: ContestStatus!
-    createdBy: ID!
-    votingType: VotingType!
-    votingDurationHours: Int!
-    votingGroupMemberIds: [ID!]!
-    wordMin: Int
-    wordMax: Int
-    createdAt: String!
-    updatedAt: String!
-  }
-
   type User {
     id: ID!
     firebaseUid: String!
@@ -41,14 +23,33 @@ export const typeDefs = `#graphql
     updatedAt: String!
   }
 
+  type Contest {
+    id: ID!
+    title: String!
+    prompt: String!
+    rules: String
+    startTime: String!
+    endTime: String!
+    status: ContestStatus!
+    createdBy: User!
+    votingType: VotingType!
+    votingDurationHours: Int!
+    wordMin: Int
+    wordMax: Int
+    createdAt: String!
+    updatedAt: String!
+    submissions: [Submission!]!
+    submissionCount: Int!
+  }
+
   type Submission {
     id: ID!
-    contestId: ID!
-    authorId: ID!
-    author: User
+    contest: Contest!
+    author: User!
+    content: String!
+    contentUrl: String
     title: String
     description: String
-    content: String!
     submittedAt: String!
     voteCount: Int!
     totalScore: Int!
@@ -57,6 +58,21 @@ export const typeDefs = `#graphql
     certificateGeneratedAt: String
     createdAt: String!
     updatedAt: String!
+    votes: [Vote!]!
+  }
+
+  type Vote {
+    id: ID!
+    contest: Contest!
+    submission: Submission!
+    voter: User!
+    points: Int!
+    votedAt: String!
+  }
+
+  type FinalizeResult {
+    contest: Contest!
+    submissions: [Submission!]!
   }
 
   input CreateContestInput {
@@ -68,7 +84,18 @@ export const typeDefs = `#graphql
     createdBy: ID!
     votingType: VotingType
     votingDurationHours: Int
-    votingGroupMemberIds: [ID!]
+    wordMin: Int
+    wordMax: Int
+  }
+
+  input UpdateContestInput {
+    title: String
+    prompt: String
+    rules: String
+    startTime: String
+    endTime: String
+    votingType: VotingType
+    votingDurationHours: Int
     wordMin: Int
     wordMax: Int
   }
@@ -82,23 +109,50 @@ export const typeDefs = `#graphql
   input CreateSubmissionInput {
     contestId: ID!
     authorId: ID!
+    content: String!
     title: String
     description: String
-    content: String!
+  }
+
+  input CastVoteInput {
+    contestId: ID!
+    submissionId: ID!
+    voterId: ID!
+    points: Int!
   }
 
   type Query {
     healthCheck: String!
+
+    users: [User!]!
+    user(id: ID!): User
+
     contests: [Contest!]!
     contest(id: ID!): Contest
-    submissionsByContest(contestId: ID!): [Submission!]!
+    contestsByStatus(status: ContestStatus!): [Contest!]!
+
+    submissions: [Submission!]!
     submission(id: ID!): Submission
-    users: [User!]!
+    submissionsByContest(contestId: ID!): [Submission!]!
+    submissionsByUser(authorId: ID!): [Submission!]!
+
+    votesBySubmission(submissionId: ID!): [Vote!]!
+    votesByContest(contestId: ID!): [Vote!]!
   }
 
   type Mutation {
-    createContest(input: CreateContestInput!): Contest!
     createUser(input: CreateUserInput!): User!
+
+    createContest(input: CreateContestInput!): Contest!
+    updateContest(id: ID!, input: UpdateContestInput!): Contest!
+    updateContestStatus(id: ID!, status: ContestStatus!): Contest!
+    deleteContest(id: ID!): Contest!
+
     createSubmission(input: CreateSubmissionInput!): Submission!
+    deleteSubmission(id: ID!): Submission!
+
+    castVote(input: CastVoteInput!): Vote!
+
+    finalizeContest(id: ID!): FinalizeResult!
   }
 `

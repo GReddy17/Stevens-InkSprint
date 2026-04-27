@@ -18,6 +18,9 @@ const submissionSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    contentUrl: {
+      type: String,
+    },
     title: {
       type: String,
       trim: true,
