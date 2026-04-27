@@ -7,6 +7,7 @@ import SubmissionViewPage from './pages/SubmissionViewPage'
 import ContestFormPage from './pages/ContestFormPage'
 import ContestViewPage from './pages/ContestViewPage'
 import NotFoundPage from './pages/NotFoundPage'
+import DevPage from './pages/DevPage'
 
 function App() {
   return (
@@ -15,10 +16,11 @@ function App() {
       <main className='mx-auto w-3/4 max-w-6xl px-4 py-6 flex-1'>
         <Routes>
           <Route path='/' element={<HomePage />} />
-          <Route path='/submissions/new' element={<SubmissionFormPage />} />
-          <Route path='/submissions/view' element={<SubmissionViewPage />} />
+          <Route path='/contests/:contestId/submit' element={<SubmissionFormPage />} />
+          <Route path='/submissions/:submissionId' element={<SubmissionViewPage />} />
           <Route path='/contests/new' element={<ContestFormPage />} />
           <Route path='/contests/view' element={<ContestViewPage />} />
+          <Route path='/dev' element={<DevPage />} />
           <Route path='*' element={<NotFoundPage />} />
         </Routes>
       </main>
