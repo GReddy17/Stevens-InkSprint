@@ -1,6 +1,7 @@
 import { gql, useMutation, useQuery } from '@apollo/client'
 import { useMemo, useState } from 'react'
 import { useParams } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 
 const GET_CONTEST = gql`
 	query GetContest($contestId: ID!) {
@@ -42,12 +43,12 @@ const GET_USERS = gql`
 
 // USE IDs FROM YOUR OWN SEEDED DATA OR THIS WILL BREAK - KT
 function SubmissionFormPage() {
-  const { contestId } = useParams()
+	const { contestId } = useParams()
 	const [submissionTitle, setSubmissionTitle] = useState('')
 	const [submissionDescription, setSubmissionDescription] = useState('')
 	const [submissionContent, setSubmissionContent] = useState('')
 	const [submitMessage, setSubmitMessage] = useState('')
-
+	const navigate = useNavigate()
 
 	const { loading, error, data } = useQuery(GET_CONTEST, {
 		variables: { contestId },
@@ -108,6 +109,10 @@ function SubmissionFormPage() {
 					},
 				},
 			})
+
+			const newSubmissionId = data.createSubmission.id
+
+			navigate(`/submissions/${newSubmissionId}`)
 
 			console.log('Created submission:', data.createSubmission)
 
