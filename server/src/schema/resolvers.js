@@ -18,6 +18,7 @@ import {
 const cacheGet = async (key) => {
   try {
     const client = await getRedis()
+    if (!client) return null
     const cached = await client.get(key)
     return cached ? JSON.parse(cached) : null
   } catch {
@@ -28,6 +29,7 @@ const cacheGet = async (key) => {
 const cacheSet = async (key, value, ttl = 300) => {
   try {
     const client = await getRedis()
+    if (!client) return
     await client.set(key, JSON.stringify(value), { EX: ttl })
   } catch {}
 }
@@ -35,6 +37,7 @@ const cacheSet = async (key, value, ttl = 300) => {
 const cacheFlush = async () => {
   try {
     const client = await getRedis()
+    if (!client) return
     await client.flushAll()
   } catch {}
 }
