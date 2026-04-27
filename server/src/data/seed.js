@@ -21,30 +21,30 @@ const seed = async () => {
 
     // USERS
     const users = await User.create([
-      { firebaseUid: ‘u1’, email: ‘alex@school.edu’, displayName: ‘Alex Chen’ },
-      { firebaseUid: ‘u2’, email: ‘jordan@school.edu’, displayName: ‘Jordan Lee’ },
-      { firebaseUid: ‘u3’, email: ‘taylor@school.edu’, displayName: ‘Taylor Kim’ },
-      { firebaseUid: ‘u4’, email: ‘sam@school.edu’, displayName: ‘Sam Patel’ },
-      { firebaseUid: ‘u5’, email: ‘chris@school.edu’, displayName: ‘Chris Wong’ },
-      { firebaseUid: ‘u6’, email: ‘jamie@school.edu’, displayName: ‘Jamie Rivera’ },
+      { firebaseUid: 'u1', email: 'alex@school.edu', displayName: 'Alex Chen' },
+      { firebaseUid: 'u2', email: 'jordan@school.edu', displayName: 'Jordan Lee' },
+      { firebaseUid: 'u3', email: 'taylor@school.edu', displayName: 'Taylor Kim' },
+      { firebaseUid: 'u4', email: 'sam@school.edu', displayName: 'Sam Patel' },
+      { firebaseUid: 'u5', email: 'chris@school.edu', displayName: 'Chris Wong' },
+      { firebaseUid: 'u6', email: 'jamie@school.edu', displayName: 'Jamie Rivera' },
     ])
 
     console.log(`Created ${users.length} users`)
 
     const contestTemplates = [
-      { title: ‘Midnight Horror’, prompt: ‘Something follows you home.’, wordMin: 100, wordMax: 1000 },
-      { title: ‘Lost in Time’, prompt: ‘A character wakes up 100 years later.’, wordMin: 200, wordMax: 1500 },
-      { title: ‘Hidden Door’, prompt: ‘You find a door that shouldn\’t exist.’, wordMin: 150, wordMax: 1200 },
-      { title: ‘Final Message’, prompt: ‘The last message on Earth.’, wordMin: 50, wordMax: 500 },
-      { title: ‘The Storm’, prompt: ‘A storm that never ends.’, wordMin: 100, wordMax: 800 },
-      { title: ‘Echoes’, prompt: ‘You hear your own voice calling back.’, wordMin: 100, wordMax: 1000 },
-      { title: ‘Stranger in Mirror’, prompt: ‘Your reflection changes.’, wordMin: 200, wordMax: 1200 },
-      { title: ‘The Package’, prompt: ‘A mysterious delivery arrives.’, wordMin: 150, wordMax: 1000 },
-      { title: ‘Parallel Life’, prompt: ‘You meet yourself.’, wordMin: 200, wordMax: 1500 },
-      { title: ‘Vanishing Town’, prompt: ‘People disappear overnight.’, wordMin: 250, wordMax: 2000 },
+      { title: 'Midnight Horror', prompt: 'Something follows you home.', wordMin: 100, wordMax: 1000 },
+      { title: 'Lost in Time', prompt: 'A character wakes up 100 years later.', wordMin: 200, wordMax: 1500 },
+      { title: 'Hidden Door', prompt: "You find a door that shouldn't exist.", wordMin: 150, wordMax: 1200 },
+      { title: 'Final Message', prompt: 'The last message on Earth.', wordMin: 50, wordMax: 500 },
+      { title: 'The Storm', prompt: 'A storm that never ends.', wordMin: 100, wordMax: 800 },
+      { title: 'Echoes', prompt: 'You hear your own voice calling back.', wordMin: 100, wordMax: 1000 },
+      { title: 'Stranger in Mirror', prompt: 'Your reflection changes.', wordMin: 200, wordMax: 1200 },
+      { title: 'The Package', prompt: 'A mysterious delivery arrives.', wordMin: 150, wordMax: 1000 },
+      { title: 'Parallel Life', prompt: 'You meet yourself.', wordMin: 200, wordMax: 1500 },
+      { title: 'Vanishing Town', prompt: 'People disappear overnight.', wordMin: 250, wordMax: 2000 },
     ]
 
-    const statuses = [‘UPCOMING’, ‘ACTIVE’, ‘VOTING’, ‘COMPLETED’]
+    const statuses = ['UPCOMING', 'ACTIVE', 'VOTING', 'COMPLETED']
 
     let totalSubmissions = 0
     let totalVotes = 0
@@ -66,7 +66,6 @@ const seed = async () => {
         wordMax: template.wordMax,
       })
 
-      // create 2 submissions per contest
       const submissions = await Submission.create([
         {
           contestId: contest._id,
@@ -86,7 +85,6 @@ const seed = async () => {
 
       totalSubmissions += submissions.length
 
-      // only add votes for completed/voting contests
       if (contest.status === 'COMPLETED' || contest.status === 'VOTING') {
         const votes = await Vote.create([
           {
