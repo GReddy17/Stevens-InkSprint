@@ -26,8 +26,22 @@ const ContestForm = ({ onSubmit, initialData = {} }) => {
   const handleSubmit = (e) => {
     e.preventDefault();
 
-    
+    // Date validation
+    if (formData.startTime && formData.endTime && formData.endTime < formData.startTime) {
+      alert('End time must be after start time');
+      return;
+    }
 
+    // Word count validation (convert to numbers!)
+    const min = formData.wordMin !== '' ? Number(formData.wordMin) : null;
+    const max = formData.wordMax !== '' ? Number(formData.wordMax) : null;
+
+    if (min !== null && max !== null && min > max) {
+      alert('Min words cannot exceed max words');
+      return;
+    }
+	
+	
     const payload = {
       ...formData,
       wordMin: min,
