@@ -1,5 +1,4 @@
-Winner.js
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 const winnerSchema = new mongoose.Schema(
   {
@@ -36,4 +35,4 @@ winnerSchema.index({ contestId: 1, placement: 1 });
 
 const Winner = mongoose.model('Winner', winnerSchema);
 
-module.exports = Winner;
+export default Winner;
