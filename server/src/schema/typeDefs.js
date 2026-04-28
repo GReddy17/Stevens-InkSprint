@@ -122,46 +122,6 @@ export const typeDefs = `#graphql
     points: Int!
   }
 
-  # ------------------------------
-  # Input Types
-  # ------------------------------
-  input CreateContestInput {
-    title: String!
-    prompt: String!
-    rules: String
-    startTime: String!   # ISO datetime
-    endTime: String!     # ISO datetime
-  }
-
-  input UpdateContestInput {
-    title: String
-    prompt: String
-    rules: String
-    startTime: String
-    endTime: String
-    status: ContestStatus
-  }
-
-  input SubmitEntryInput {
-    contestId: ID!
-    title: String
-    contentUrl: String!   # URL from Firebase Storage after upload
-  }
-
-  input ScoreSubmissionInput {
-    submissionId: ID!
-    score: Float!
-    feedback: String
-  }
-
-  input DeclareWinnerInput {
-    submissionId: ID!
-    placement: Int!       # 1, 2, 3, etc.
-  }
-
-  # ------------------------------
-  # Queries
-  # ------------------------------
   type Query {
     healthCheck: String!
 
