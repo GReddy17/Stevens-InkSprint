@@ -24,12 +24,6 @@ function Header() {
 						className="text-gray-300 hover:text-white border border-white px-2">
 						Contest Form (Temp Link)
 					</Link>
-
-					<Link
-						to="/contests/view"
-						className="text-gray-300 hover:text-white border border-white px-2">
-						View Mock Contest (Temp Link)
-					</Link>
 				</nav>
 			</div>
 		</header>

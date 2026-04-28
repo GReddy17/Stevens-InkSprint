@@ -19,7 +19,7 @@ function App() {
           <Route path='/contests/:contestId/submit' element={<SubmissionFormPage />} />
           <Route path='/submissions/:submissionId' element={<SubmissionViewPage />} />
           <Route path='/contests/new' element={<ContestFormPage />} />
-          <Route path='/contests/view' element={<ContestViewPage />} />
+          <Route path="/contests/:contestId" element={<ContestViewPage />} />
           <Route path='/dev' element={<DevPage />} />
           <Route path='*' element={<NotFoundPage />} />
         </Routes>

@@ -1,22 +1,33 @@
-import { useEffect, useState } from 'react'
-import { getMockContest } from '../services/submissionService'
+import { gql, useQuery } from '@apollo/client'
+import { useParams } from 'react-router-dom'
+
+const GET_CONTEST = gql`
+  query GetContest($contestId: ID!) {
+    contest(id: $contestId) {
+      id
+      title
+      prompt
+      rules
+      startTime
+      endTime
+      status
+      votingType
+      votingDurationHours
+      wordMin
+      wordMax
+    }
+  }
+`;
 
 function ContestViewPage() {
-	const [contest, setContest] = useState(null)
-	const [loading, setLoading] = useState(true)
-	const [error, setError] = useState('')
+	const { contestId } = useParams()
 
-	useEffect(() => {
-		// TODO: replace with backend API call eventuall!
-		try {
-			const data = getMockContest()
-			setContest(data)
-		} catch (err) {
-			setError('Failed to load contest.')
-		} finally {
-			setLoading(false)
-		}
-	}, [])
+	const { loading, error, data } = useQuery(GET_CONTEST, {
+		variables: { contestId },
+		skip: !contestId,
+	})
+
+	const contest = data?.contest
 
 	if (loading) {
 		return (
@@ -33,7 +44,7 @@ function ContestViewPage() {
 			<div className="bg-gray-900 text-white px-6 py-10">
 				<div className="max-w-3xl mx-auto">
 					<h1 className="text-3xl font-bold mb-4">Contest</h1>
-					<p className="text-red-400">{error || 'Contest not found.'}</p>
+					<p className="text-red-400">{error?.message || 'Contest not found.'}</p>
 				</div>
 			</div>
 		)
