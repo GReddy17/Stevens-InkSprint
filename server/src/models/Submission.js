@@ -1,4 +1,4 @@
-import mongoose from 'mongoose';
+import mongoose from 'mongoose'
 
 const submissionSchema = new mongoose.Schema(
   {
@@ -14,23 +14,34 @@ const submissionSchema = new mongoose.Schema(
       required: true,
       index: true,
     },
+    content: {
+      type: String,
+      required: true,
+    },
     contentUrl: {
       type: String,
-      required: true, 
     },
     title: {
       type: String,
       trim: true,
+    },
+    description: {
+      type: String,
     },
     submittedAt: {
       type: Date,
       default: Date.now,
       index: true,
     },
-    score: {
+    voteCount: {
       type: Number,
+      default: 0,
       min: 0,
-      max: 10,
+    },
+    totalScore: {
+      type: Number,
+      default: 0,
+      min: 0,
     },
     placement: {
       type: Number,
@@ -38,17 +49,20 @@ const submissionSchema = new mongoose.Schema(
       default: null,
       index: true,
     },
-    feedback: {
+    certificateUrl: {
       type: String,
+    },
+    certificateGeneratedAt: {
+      type: Date,
     },
   },
   {
     timestamps: true,
   }
-);
+)
 
-submissionSchema.index({ contestId: 1, authorId: 1 }, { unique: true });
+submissionSchema.index({ contestId: 1, authorId: 1 }, { unique: true })
 
-const Submission = mongoose.model('Submission', submissionSchema);
+const Submission = mongoose.model('Submission', submissionSchema)
 
-export default Submission;
+export default Submission

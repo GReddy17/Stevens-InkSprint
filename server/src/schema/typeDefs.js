@@ -1,31 +1,25 @@
 // server/src/schema/typeDefs.js
 export const typeDefs = `#graphql
-  # ------------------------------
-  # Enums
-  # ------------------------------
-  enum UserRole {
-    ADMIN
-    JUDGE
-    PARTICIPANT
-  }
-
   enum ContestStatus {
     UPCOMING
     ACTIVE
     CLOSED
+    VOTING
     JUDGING
     COMPLETED
   }
 
-  # ------------------------------
-  # Types
-  # ------------------------------
+  enum VotingType {
+    EVERYONE
+    JUDGES
+    CREATOR
+  }
+
   type User {
     id: ID!
     firebaseUid: String!
     email: String!
     displayName: String
-    role: UserRole!
     createdAt: String!
     updatedAt: String!
   }
@@ -35,39 +29,97 @@ export const typeDefs = `#graphql
     title: String!
     prompt: String!
     rules: String
-    startTime: String!          # ISO datetime
-    endTime: String!            # ISO datetime
+    startTime: String!
+    endTime: String!
     status: ContestStatus!
     createdBy: User!
+    votingType: VotingType!
+    votingDurationHours: Int!
+    wordMin: Int
+    wordMax: Int
     createdAt: String!
     updatedAt: String!
-    submissions: [Submission!]! # Optional: resolves submissions of this contest
-    winners: [Winner!]!         # Optional: resolves winners of this contest
+    submissions: [Submission!]!
+    submissionCount: Int!
   }
 
   type Submission {
     id: ID!
     contest: Contest!
     author: User!
-    contentUrl: String!         # Firebase Storage URL
+    content: String!
+    contentUrl: String
     title: String
+    description: String
     submittedAt: String!
-    score: Float
+    voteCount: Int!
+    totalScore: Int!
     placement: Int
-    feedback: String
+    certificateUrl: String
+    certificateGeneratedAt: String
     createdAt: String!
     updatedAt: String!
+    votes: [Vote!]!
   }
 
-  type Winner {
+  type Vote {
     id: ID!
     contest: Contest!
     submission: Submission!
-    placement: Int!
-    certificateUrl: String
-    generatedAt: String
-    createdAt: String!
-    updatedAt: String!
+    voter: User!
+    points: Int!
+    votedAt: String!
+  }
+
+  type FinalizeResult {
+    contest: Contest!
+    submissions: [Submission!]!
+  }
+
+  input CreateContestInput {
+    title: String!
+    prompt: String!
+    rules: String
+    startTime: String!
+    endTime: String!
+    createdBy: ID!
+    votingType: VotingType
+    votingDurationHours: Int
+    wordMin: Int
+    wordMax: Int
+  }
+
+  input UpdateContestInput {
+    title: String
+    prompt: String
+    rules: String
+    startTime: String
+    endTime: String
+    votingType: VotingType
+    votingDurationHours: Int
+    wordMin: Int
+    wordMax: Int
+  }
+
+  input CreateUserInput {
+    firebaseUid: String!
+    email: String!
+    displayName: String
+  }
+
+  input CreateSubmissionInput {
+    contestId: ID!
+    authorId: ID!
+    content: String!
+    title: String
+    description: String
+  }
+
+  input CastVoteInput {
+    contestId: ID!
+    submissionId: ID!
+    voterId: ID!
+    points: Int!
   }
 
   # ------------------------------
@@ -111,44 +163,37 @@ export const typeDefs = `#graphql
   # Queries
   # ------------------------------
   type Query {
-    # Current authenticated user
-    me: User
+    healthCheck: String!
 
-    # Admin/ Judge only: list all users (optional, can be restricted)
     users: [User!]!
+    user(id: ID!): User
 
-    # Contest queries
-    contests(status: ContestStatus): [Contest!]!   # filter by status
+    contests: [Contest!]!
     contest(id: ID!): Contest
+    contestsByStatus(status: ContestStatus!): [Contest!]!
 
-    # Submission queries
-    submissions(contestId: ID!): [Submission!]!    # all submissions for a contest (admins/judges see all; participants see only their own)
-    mySubmissions: [Submission!]!                  # submissions by current user
+    submissions: [Submission!]!
+    submission(id: ID!): Submission
+    submissionsByContest(contestId: ID!): [Submission!]!
+    submissionsByUser(authorId: ID!): [Submission!]!
 
-    # Winner queries
-    winners(contestId: ID!): [Winner!]!            # winners of a specific contest
+    votesBySubmission(submissionId: ID!): [Vote!]!
+    votesByContest(contestId: ID!): [Vote!]!
   }
 
-  # ------------------------------
-  # Mutations
-  # ------------------------------
   type Mutation {
-    # Contest mutations (admin only)
+    createUser(input: CreateUserInput!): User!
+
     createContest(input: CreateContestInput!): Contest!
     updateContest(id: ID!, input: UpdateContestInput!): Contest!
-    deleteContest(id: ID!): Boolean!
-    updateContestStatus(id: ID!, status: ContestStatus!): Contest!   # manually change status
+    updateContestStatus(id: ID!, status: ContestStatus!): Contest!
+    deleteContest(id: ID!): Contest!
 
-    # Submission mutations
-    submitEntry(input: SubmitEntryInput!): Submission!
-    updateSubmission(id: ID!, title: String, contentUrl: String): Submission!   # only author can edit before deadline
-    deleteSubmission(id: ID!): Boolean!        # author or admin
+    createSubmission(input: CreateSubmissionInput!): Submission!
+    deleteSubmission(id: ID!): Submission!
 
-    # Judging mutations (judge/admin only)
-    scoreSubmission(input: ScoreSubmissionInput!): Submission!
-    declareWinners(contestId: ID!, winners: [DeclareWinnerInput!]!): [Winner!]!   # replaces previous winners
+    castVote(input: CastVoteInput!): Vote!
 
-    # Admin only: update user role
-    updateUserRole(userId: ID!, role: UserRole!): User!
+    finalizeContest(id: ID!): FinalizeResult!
   }
-`;
+`
