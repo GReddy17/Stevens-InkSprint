@@ -1,3 +1,4 @@
+// server/src/schema/typeDefs.js
 export const typeDefs = `#graphql
   enum ContestStatus {
     UPCOMING
