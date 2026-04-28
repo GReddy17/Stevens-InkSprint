@@ -28,7 +28,11 @@ function ContestSection({ contest }) {
 	return (
 		<div className="bg-gray-800 border border-gray-700 rounded-xl p-5">
 			<div className="flex items-center justify-between mb-3">
-				<h2 className="text-lg font-semibold">{contest.title}</h2>
+				<h2 className="text-lg font-semibold">
+					<Link to={`/contests/${contest.id}`}>
+						{contest.title}
+					</Link>
+				</h2>
 
 				<Link
 					to={`/contests/${contest.id}/submit`}
