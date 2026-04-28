@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 const contestSchema = new mongoose.Schema(
   {
@@ -40,7 +40,6 @@ const contestSchema = new mongoose.Schema(
   }
 );
 
-
 const Contest = mongoose.model('Contest', contestSchema);
 
-module.exports = Contest;
+export default Contest;
