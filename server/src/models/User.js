@@ -1,11 +1,11 @@
-import mongoose from 'mongoose';
+import mongoose from 'mongoose'
 
 const userSchema = new mongoose.Schema(
   {
     firebaseUid: {
       type: String,
       required: true,
-      unique: true, 
+      unique: true,
     },
     email: {
       type: String,
@@ -16,20 +16,13 @@ const userSchema = new mongoose.Schema(
     displayName: {
       type: String,
       trim: true,
-    },
-    role: {
-      type: String,
-      enum: ['ADMIN', 'JUDGE', 'PARTICIPANT'],
-      default: 'PARTICIPANT',
-      index: true, 
-    },
+    }
   },
   {
-    timestamps: true, 
+    timestamps: true,
   }
-);
+)
 
-userSchema.index({ email: 1 });
+const User = mongoose.model('User', userSchema)
 
-const User = mongoose.model('User', userSchema);
-export default User;
+export default User
