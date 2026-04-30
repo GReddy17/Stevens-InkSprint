@@ -21,12 +21,12 @@ const seed = async () => {
 
     // USERS
     const users = await User.create([
-      { firebaseUid: 'u1', email: 'alex@school.edu', displayName: 'Alex Chen' },
-      { firebaseUid: 'u2', email: 'jordan@school.edu', displayName: 'Jordan Lee' },
-      { firebaseUid: 'u3', email: 'taylor@school.edu', displayName: 'Taylor Kim' },
-      { firebaseUid: 'u4', email: 'sam@school.edu', displayName: 'Sam Patel' },
-      { firebaseUid: 'u5', email: 'chris@school.edu', displayName: 'Chris Wong' },
-      { firebaseUid: 'u6', email: 'jamie@school.edu', displayName: 'Jamie Rivera' },
+      { firebaseUid: 'u1', email: 'alex@school.edu', displayName: 'Alex Chen', role: 'PARTICIPANT' },
+      { firebaseUid: 'u2', email: 'jordan@school.edu', displayName: 'Jordan Lee', role: 'PARTICIPANT' },
+      { firebaseUid: 'u3', email: 'taylor@school.edu', displayName: 'Taylor Kim', role: 'PARTICIPANT'},
+      { firebaseUid: 'u4', email: 'sam@school.edu', displayName: 'Sam Patel', role: 'ADMIN' },
+      { firebaseUid: 'u5', email: 'chris@school.edu', displayName: 'Chris Wong', role: 'JUDGE' },
+      { firebaseUid: 'u6', email: 'jamie@school.edu', displayName: 'Jamie Rivera', role: 'JUDGE' },
     ])
 
     console.log(`Created ${users.length} users`)

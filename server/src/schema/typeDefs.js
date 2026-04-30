@@ -15,11 +15,18 @@ export const typeDefs = `#graphql
     CREATOR
   }
 
+  enum UserRole {
+    ADMIN
+    JUDGE
+    PARTICIPANT
+  }
+
   type User {
     id: ID!
     firebaseUid: String!
     email: String!
     displayName: String
+    role: UserRole!
     createdAt: String!
     updatedAt: String!
   }
@@ -82,13 +89,12 @@ export const typeDefs = `#graphql
     rules: String
     startTime: String!
     endTime: String!
-    createdBy: ID!
     votingType: VotingType
     votingDurationHours: Int
     wordMin: Int
     wordMax: Int
   }
-
+  
   input UpdateContestInput {
     title: String
     prompt: String
@@ -109,7 +115,6 @@ export const typeDefs = `#graphql
 
   input CreateSubmissionInput {
     contestId: ID!
-    authorId: ID!
     content: String!
     title: String
     description: String
@@ -118,11 +123,13 @@ export const typeDefs = `#graphql
   input CastVoteInput {
     contestId: ID!
     submissionId: ID!
-    voterId: ID!
     points: Int!
   }
 
   type Query {
+
+    me: User
+
     healthCheck: String!
 
     users: [User!]!
