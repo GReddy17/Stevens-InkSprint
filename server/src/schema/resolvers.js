@@ -4,15 +4,9 @@ import Submission from '../models/Submission.js'
 import User from '../models/User.js'
 import Vote from '../models/Vote.js'
 import { getRedis } from '../config/redisClient.js'
-import {
-  validateString,
-  validateEmail,
-  validateContestStatus,
-  validateVotingType,
-  validateDates,
-  validatePoints,
-  validateWordLimits,
-} from '../utils/validation.js'
+import { validateString, validateEmail, validateContestStatus, validateVotingType, validateDates, validatePoints, validateWordLimits,} from '../utils/validation.js'
+import { requireRole } from '../middlewares/roleCheck.js';
+
 
 // Cache helpers
 const cacheGet = async (key) => {
@@ -46,13 +40,21 @@ export const resolvers = {
   Query: {
     healthCheck: () => 'Ink Sprint GraphQL server is running',
 
+    // test
+    me: async (_, __, context) => {
+      if (!context.user) return null;
+      const user = await User.findById(context.user.id);
+      return user;
+    },
+    
     // Users
-    users: async () => {
-      const cached = await cacheGet('users')
-      if (cached) return cached
-      const data = await User.find({})
-      await cacheSet('users', data)
-      return data
+    users: async (_, __, context) => {
+      // requireRole(context.user, 'ADMIN');
+      const cached = await cacheGet('users');
+      if (cached) return cached;
+      const data = await User.find({});
+      await cacheSet('users', data);
+      return data;
     },
 
     user: async (_, { id }) => {
@@ -215,17 +217,14 @@ export const resolvers = {
     },
 
     // Create contest
-    createContest: async (_, { input }) => {
-      const { title, prompt, rules, startTime, endTime, createdBy, votingType, votingDurationHours, wordMin, wordMax } = input
+    createContest: async (_, { input }, context) => {
+      requireRole(context.user, 'ADMIN');
+      const { title, prompt, rules, startTime, endTime, votingType, votingDurationHours, wordMin, wordMax } = input;
 
       validateString(title, 'title')
       validateString(prompt, 'prompt')
       const { start, end } = validateDates(startTime, endTime)
       validateWordLimits(wordMin, wordMax)
-
-      if (!mongoose.Types.ObjectId.isValid(createdBy)) throw new Error('Invalid createdBy user ID')
-      const creator = await User.findById(createdBy)
-      if (!creator) throw new Error('Creator user not found')
 
       const validVotingType = votingType ? validateVotingType(votingType) : 'EVERYONE'
 
@@ -233,22 +232,22 @@ export const resolvers = {
         title: title.trim(),
         prompt: prompt.trim(),
         rules: rules?.trim() || null,
-        startTime: start,
-        endTime: end,
+        startTime,
+        endTime,
         status: 'UPCOMING',
-        createdBy,
-        votingType: validVotingType,
+        createdBy: context.user.id,
+        votingType: votingType || 'EVERYONE',
         votingDurationHours: votingDurationHours || 48,
         wordMin: wordMin || null,
         wordMax: wordMax || null,
-      }).save()
-
-      await cacheFlush()
-      return contest
+      }).save();
+      await cacheFlush();
+      return contest;
     },
 
     // Update contest fields
-    updateContest: async (_, { id, input }) => {
+    updateContest: async (_, { id, input}, context) => {
+      requireRole(context.user, 'ADMIN');
       if (!mongoose.Types.ObjectId.isValid(id)) throw new Error('Invalid contest ID')
       const contest = await Contest.findById(id)
       if (!contest) throw new Error('Contest not found')
@@ -282,7 +281,9 @@ export const resolvers = {
     },
 
     // Update contest status
-    updateContestStatus: async (_, { id, status }) => {
+    updateContestStatus: async (_, { id, status }, context) => {
+      requireRole(context.user, ['ADMIN', 'JUDGE']);
+
       if (!mongoose.Types.ObjectId.isValid(id)) throw new Error('Invalid contest ID')
       const validStatus = validateContestStatus(status)
       const contest = await Contest.findById(id)
@@ -298,7 +299,8 @@ export const resolvers = {
     },
 
     // Delete contest
-    deleteContest: async (_, { id }) => {
+    deleteContest: async (_, { id }, context) => {
+      requireRole(context.user, 'ADMIN');
       if (!mongoose.Types.ObjectId.isValid(id)) throw new Error('Invalid contest ID')
       const contest = await Contest.findById(id)
       if (!contest) throw new Error('Contest not found')
@@ -315,11 +317,13 @@ export const resolvers = {
     },
 
     // Create submission
-    createSubmission: async (_, { input }) => {
-      const { contestId, authorId, content, title, description } = input
+    createSubmission: async (_, { input }, context) => {
+
+      if (!context.user) throw new Error('Authentication required');
+
+      const { contestId, content, title, description } = input
 
       if (!mongoose.Types.ObjectId.isValid(contestId)) throw new Error('Invalid contest ID')
-      if (!mongoose.Types.ObjectId.isValid(authorId)) throw new Error('Invalid author ID')
       validateString(content, 'content')
 
       const contest = await Contest.findById(contestId)
@@ -334,17 +338,16 @@ export const resolvers = {
 
       const submission = await new Submission({
         contestId,
-        authorId,
+        authorId: context.user.id,
         content: content.trim(),
         title: title?.trim() || null,
         description: description?.trim() || null,
         submittedAt: new Date(),
         voteCount: 0,
         totalScore: 0,
-      }).save()
-
-      await cacheFlush()
-      return submission
+      }).save();
+      await cacheFlush();
+      return submission;
     },
 
     // Delete submission
@@ -361,8 +364,10 @@ export const resolvers = {
     },
 
     // Cast vote
-    castVote: async (_, { input }) => {
-      const { contestId, submissionId, voterId, points } = input
+    castVote: async (_, { input }, context) => {
+      if (!context.user) throw new Error('Authentication required');
+      const { contestId, submissionId, points } = input;
+      const voterId = context.user.id;
 
       if (!mongoose.Types.ObjectId.isValid(contestId)) throw new Error('Invalid contest ID')
       if (!mongoose.Types.ObjectId.isValid(submissionId)) throw new Error('Invalid submission ID')
@@ -405,7 +410,9 @@ export const resolvers = {
     },
 
     // Finalize contest - rank submissions and assign placements
-    finalizeContest: async (_, { id }) => {
+    finalizeContest: async (_, { id }, context) => {
+      requireRole(context.user, ['ADMIN', 'JUDGE']);
+
       if (!mongoose.Types.ObjectId.isValid(id)) throw new Error('Invalid contest ID')
       const contest = await Contest.findById(id)
       if (!contest) throw new Error('Contest not found')

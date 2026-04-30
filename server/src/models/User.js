@@ -16,7 +16,14 @@ const userSchema = new mongoose.Schema(
     displayName: {
       type: String,
       trim: true,
-    }
+    },
+    role: {
+      type: String,
+      enum: ['ADMIN', 'JUDGE', 'PARTICIPANT'],
+      default: 'PARTICIPANT',
+      required: true,
+      index: true,
+    },
   },
   {
     timestamps: true,
@@ -24,5 +31,4 @@ const userSchema = new mongoose.Schema(
 )
 
 const User = mongoose.model('User', userSchema)
-
 export default User

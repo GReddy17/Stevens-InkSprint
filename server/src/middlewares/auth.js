@@ -50,7 +50,9 @@ export async function authenticateUser(token) {
  * Expects header: Authorization: Bearer <token>
  */
 export function extractTokenFromHeader(req) {
+  console.log('Full headers:', req.headers);
   const authHeader = req.headers.authorization;
+  console.log('Authorization header:', authHeader);
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     return null;
   }
