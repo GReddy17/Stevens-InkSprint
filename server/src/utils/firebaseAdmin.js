@@ -3,9 +3,7 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-const USE_REAL_FIREBASE = process.env.USE_REAL_FIREBASE === 'true';
-
-if (!admin.apps.length && USE_REAL_FIREBASE) {
+if (!admin.apps.length) {
   try {
     if (process.env.FIREBASE_PRIVATE_KEY) {
       const serviceAccount = {
@@ -17,28 +15,10 @@ if (!admin.apps.length && USE_REAL_FIREBASE) {
     } else {
       admin.initializeApp();
     }
-    console.log('Firebase Admin initialized (real mode)');
+    console.log('Firebase Admin initialized');
   } catch (error) {
     console.error('Firebase Admin initialization error:', error);
   }
-} else if (!USE_REAL_FIREBASE) {
-  console.log('Firebase Admin running in TEST MODE: tokens are mocked');
 }
 
-// TEST MODE: Bypass actual Firebase authentication for development
-// Replace with real Firebase Admin SDK in production
-
-export default USE_REAL_FIREBASE
-  ? admin
-  : {
-      auth: () => ({
-        verifyIdToken: async (token) => {
-          if (!token) throw new Error('No token');
-          return {
-            uid: token,
-            email: `${token}@test.com`,
-            name: `Test User ${token}`,
-          };
-        },
-      }),
-    };
+export default admin;
