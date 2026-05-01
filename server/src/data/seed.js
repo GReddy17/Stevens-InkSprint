@@ -1,10 +1,9 @@
-import mongoose from 'mongoose'
-import dotenv from 'dotenv'
-import User from '../models/User.js'
-import Contest from '../models/Contest.js'
-import Submission from '../models/Submission.js'
-import Vote from '../models/Vote.js'
-import { connectToMongo } from '../config/mongoConnection.js'
+import mongoose from 'mongoose';
+import dotenv from 'dotenv';
+import User from '../models/User.js';
+import Contest from '../models/Contest.js';
+import Submission from '../models/Submission.js';
+import { connectToMongo } from '../config/mongoConnection.js';
 
 dotenv.config()
 

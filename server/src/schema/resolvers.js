@@ -2,6 +2,7 @@ import mongoose from 'mongoose'
 import Contest from '../models/Contest.js'
 import Submission from '../models/Submission.js'
 import User from '../models/User.js'
+import admin from '../utils/firebaseAdmin.js';
 import Vote from '../models/Vote.js'
 import { getRedis } from '../config/redisClient.js'
 import {
@@ -46,42 +47,28 @@ const cacheFlush = async () => {
 export const resolvers = {
   Query: {
     healthCheck: () => 'Ink Sprint GraphQL server is running',
-
+    
     // Users
     users: async () => {
-      const cached = await cacheGet('users')
-      if (cached) return cached
-      const data = await User.find({})
-      await cacheSet('users', data)
-      return data
+      return await User.find({});
     },
 
     user: async (_, { id }) => {
       if (!mongoose.Types.ObjectId.isValid(id)) throw new Error('Invalid user ID')
-      const cached = await cacheGet(`user:${id}`)
-      if (cached) return cached
       const user = await User.findById(id)
       if (!user) throw new Error('User not found')
-      await cacheSet(`user:${id}`, user)
       return user
     },
 
     // Contests
     contests: async () => {
-      const cached = await cacheGet('contests')
-      if (cached) return cached
-      const data = await Contest.find({}).sort({ createdAt: -1 })
-      await cacheSet('contests', data)
-      return data
+      return await Contest.find({}).sort({ createdAt: -1 })
     },
 
     contest: async (_, { id }) => {
       if (!mongoose.Types.ObjectId.isValid(id)) throw new Error('Invalid contest ID')
-      const cached = await cacheGet(`contest:${id}`)
-      if (cached) return cached
       const contest = await Contest.findById(id)
       if (!contest) throw new Error('Contest not found')
-      await cacheSet(`contest:${id}`, contest)
       return contest
     },
 
@@ -94,58 +81,35 @@ export const resolvers = {
 
     // Submissions
     submissions: async () => {
-      const cached = await cacheGet('submissions')
-      if (cached) return cached
-      const data = await Submission.find({}).sort({ submittedAt: -1 })
-      await cacheSet('submissions', data)
-      return data
+      return await Submission.find({}).sort({ submittedAt: -1 })
     },
 
     submission: async (_, { id }) => {
       if (!mongoose.Types.ObjectId.isValid(id)) throw new Error('Invalid submission ID')
-      const cached = await cacheGet(`submission:${id}`)
-      if (cached) return cached
       const submission = await Submission.findById(id)
       if (!submission) throw new Error('Submission not found')
-      await cacheSet(`submission:${id}`, submission)
       return submission
     },
 
     submissionsByContest: async (_, { contestId }) => {
       if (!mongoose.Types.ObjectId.isValid(contestId)) throw new Error('Invalid contest ID')
-      const cached = await cacheGet(`submissions:contest:${contestId}`)
-      if (cached) return cached
-      const data = await Submission.find({ contestId }).sort({ totalScore: -1 })
-      await cacheSet(`submissions:contest:${contestId}`, data)
-      return data
+      return await Submission.find({ contestId }).sort({ totalScore: -1 })
     },
 
     submissionsByUser: async (_, { authorId }) => {
       if (!mongoose.Types.ObjectId.isValid(authorId)) throw new Error('Invalid user ID')
-      const cached = await cacheGet(`submissions:user:${authorId}`)
-      if (cached) return cached
-      const data = await Submission.find({ authorId }).sort({ submittedAt: -1 })
-      await cacheSet(`submissions:user:${authorId}`, data)
-      return data
+      return await Submission.find({ authorId }).sort({ submittedAt: -1 })
     },
 
     // Votes
     votesBySubmission: async (_, { submissionId }) => {
       if (!mongoose.Types.ObjectId.isValid(submissionId)) throw new Error('Invalid submission ID')
-      const cached = await cacheGet(`votes:submission:${submissionId}`)
-      if (cached) return cached
-      const data = await Vote.find({ submissionId })
-      await cacheSet(`votes:submission:${submissionId}`, data)
-      return data
+      return await Vote.find({ submissionId })
     },
 
     votesByContest: async (_, { contestId }) => {
       if (!mongoose.Types.ObjectId.isValid(contestId)) throw new Error('Invalid contest ID')
-      const cached = await cacheGet(`votes:contest:${contestId}`)
-      if (cached) return cached
-      const data = await Vote.find({ contestId })
-      await cacheSet(`votes:contest:${contestId}`, data)
-      return data
+      return await Vote.find({ contestId })
     },
   },
 
@@ -157,13 +121,13 @@ export const resolvers = {
       return getContestStatus(parent)
     },
     createdBy: async (parent) => {
-      return await User.findById(parent.createdBy)
+      return await User.findById(parent.createdBy);
     },
     submissions: async (parent) => {
-      return await Submission.find({ contestId: parent._id }).sort({ totalScore: -1 })
+      return await Submission.find({ contestId: parent._id }).sort({ totalScore: -1 });
     },
     submissionCount: async (parent) => {
-      return await Submission.countDocuments({ contestId: parent._id })
+      return await Submission.countDocuments({ contestId: parent._id });
     },
   },
 
@@ -174,13 +138,10 @@ export const resolvers = {
   Submission: {
     id: (parent) => parent._id.toString(),
     contest: async (parent) => {
-      return await Contest.findById(parent.contestId)
+      return await Contest.findById(parent.contestId);
     },
     author: async (parent) => {
-      return await User.findById(parent.authorId)
-    },
-    votes: async (parent) => {
-      return await Vote.find({ submissionId: parent._id })
+      return await User.findById(parent.authorId);
     },
   },
 
@@ -213,7 +174,6 @@ export const resolvers = {
         displayName: displayName?.trim() || null,
       }).save()
 
-      await cacheFlush()
       return user
     },
 
@@ -246,7 +206,6 @@ export const resolvers = {
         wordMax: wordMax || null,
       }).save()
 
-      await cacheFlush()
       return contest
     },
 
@@ -280,7 +239,6 @@ export const resolvers = {
       }
 
       const updated = await Contest.findByIdAndUpdate(id, { $set: update }, { new: true })
-      await cacheFlush()
       return updated
     },
 
@@ -296,7 +254,6 @@ export const resolvers = {
         { $set: { status: validStatus } },
         { new: true }
       )
-      await cacheFlush()
       return updated
     },
 
@@ -306,14 +263,12 @@ export const resolvers = {
       const contest = await Contest.findById(id)
       if (!contest) throw new Error('Contest not found')
 
-      // Remove all related submissions and votes
       const submissions = await Submission.find({ contestId: id })
       const submissionIds = submissions.map((s) => s._id)
       await Vote.deleteMany({ submissionId: { $in: submissionIds } })
       await Submission.deleteMany({ contestId: id })
       await Contest.findByIdAndDelete(id)
 
-      await cacheFlush()
       return contest
     },
 
@@ -346,7 +301,6 @@ export const resolvers = {
         totalScore: 0,
       }).save()
 
-      await cacheFlush()
       return submission
     },
 
@@ -359,7 +313,6 @@ export const resolvers = {
       await Vote.deleteMany({ submissionId: id })
       await Submission.findByIdAndDelete(id)
 
-      await cacheFlush()
       return submission
     },
 
@@ -383,10 +336,8 @@ export const resolvers = {
       const voter = await User.findById(voterId)
       if (!voter) throw new Error('Voter not found')
 
-      // Cannot vote on own submission
       if (submission.authorId.toString() === voterId) throw new Error('Cannot vote on your own submission')
 
-      // Check already voted on this submission
       const existingVote = await Vote.findOne({ submissionId, voterId })
       if (existingVote) throw new Error('You have already voted on this submission')
 
@@ -398,12 +349,10 @@ export const resolvers = {
         votedAt: new Date(),
       }).save()
 
-      // Update submission score
       await Submission.findByIdAndUpdate(submissionId, {
         $inc: { voteCount: 1, totalScore: points },
       })
 
-      await cacheFlush()
       return vote
     },
 
@@ -419,7 +368,6 @@ export const resolvers = {
 
       const submissions = await Submission.find({ contestId: id }).sort({ totalScore: -1 })
 
-      // Assign placements and certificate URLs
       const updated = await Promise.all(
         submissions.map(async (sub, index) => {
           const placement = index + 1
@@ -444,8 +392,7 @@ export const resolvers = {
         { new: true }
       )
 
-      await cacheFlush()
       return { contest: finalizedContest, submissions: updated }
     },
   },
-}
+};
