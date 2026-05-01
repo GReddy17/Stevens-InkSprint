@@ -13,6 +13,7 @@ import {
   validatePoints,
   validateWordLimits,
 } from '../utils/validation.js'
+import { getContestStatus } from '../utils/helpers.js'
 
 // Cache helpers
 const cacheGet = async (key) => {
@@ -86,11 +87,9 @@ export const resolvers = {
 
     contestsByStatus: async (_, { status }) => {
       const validStatus = validateContestStatus(status)
-      const cached = await cacheGet(`contests:status:${validStatus}`)
-      if (cached) return cached
-      const data = await Contest.find({ status: validStatus }).sort({ createdAt: -1 })
-      await cacheSet(`contests:status:${validStatus}`, data)
-      return data
+      const contests = await Contest.find({}).sort({ createdAt: -1 })
+
+      return contests.filter((contest) => getContestStatus(contest) === validStatus)
     },
 
     // Submissions
@@ -153,6 +152,10 @@ export const resolvers = {
   // Relationship resolvers
   Contest: {
     id: (parent) => parent._id.toString(),
+
+    status: (parent) => {
+      return getContestStatus(parent)
+    },
     createdBy: async (parent) => {
       return await User.findById(parent.createdBy)
     },
