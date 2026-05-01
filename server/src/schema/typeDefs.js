@@ -59,6 +59,16 @@ export const typeDefs = `#graphql
     certificateGeneratedAt: String
     createdAt: String!
     updatedAt: String!
+    votes: [Vote!]!
+  }
+
+  type Vote {
+    id: ID!
+    contest: Contest!
+    submission: Submission!
+    voter: User!
+    points: Int!
+    votedAt: String!
   }
 
   type FinalizeResult {
@@ -120,6 +130,9 @@ export const typeDefs = `#graphql
     submission(id: ID!): Submission
     submissionsByContest(contestId: ID!): [Submission!]!
     submissionsByUser(authorId: ID!): [Submission!]!
+
+    votesBySubmission(submissionId: ID!): [Vote!]!
+    votesByContest(contestId: ID!): [Vote!]!
   }
 
   type Mutation {
@@ -135,6 +148,8 @@ export const typeDefs = `#graphql
 
     createSubmission(input: CreateSubmissionInput!): Submission!
     deleteSubmission(id: ID!): Submission!
+
+    castVote(input: CastVoteInput!): Vote!
 
     finalizeContest(id: ID!): FinalizeResult!
   }
