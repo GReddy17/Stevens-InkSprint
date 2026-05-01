@@ -15,18 +15,11 @@ export const typeDefs = `#graphql
     CREATOR
   }
 
-  enum UserRole {
-    ADMIN
-    JUDGE
-    PARTICIPANT
-  }
-
   type User {
     id: ID!
     firebaseUid: String!
     email: String!
     displayName: String
-    role: UserRole!
     createdAt: String!
     updatedAt: String!
   }
@@ -66,16 +59,6 @@ export const typeDefs = `#graphql
     certificateGeneratedAt: String
     createdAt: String!
     updatedAt: String!
-    votes: [Vote!]!
-  }
-
-  type Vote {
-    id: ID!
-    contest: Contest!
-    submission: Submission!
-    voter: User!
-    points: Int!
-    votedAt: String!
   }
 
   type FinalizeResult {
@@ -89,12 +72,13 @@ export const typeDefs = `#graphql
     rules: String
     startTime: String!
     endTime: String!
+    createdBy: ID!
     votingType: VotingType
     votingDurationHours: Int
     wordMin: Int
     wordMax: Int
   }
-  
+
   input UpdateContestInput {
     title: String
     prompt: String
@@ -115,20 +99,13 @@ export const typeDefs = `#graphql
 
   input CreateSubmissionInput {
     contestId: ID!
+    authorId: ID!
     content: String!
     title: String
     description: String
   }
 
-  input CastVoteInput {
-    contestId: ID!
-    submissionId: ID!
-    points: Int!
-  }
-
   type Query {
-
-    me: User
 
     healthCheck: String!
 
@@ -143,12 +120,12 @@ export const typeDefs = `#graphql
     submission(id: ID!): Submission
     submissionsByContest(contestId: ID!): [Submission!]!
     submissionsByUser(authorId: ID!): [Submission!]!
-
-    votesBySubmission(submissionId: ID!): [Vote!]!
-    votesByContest(contestId: ID!): [Vote!]!
   }
 
   type Mutation {
+
+    getDevToken(email: String!): String! 
+
     createUser(input: CreateUserInput!): User!
 
     createContest(input: CreateContestInput!): Contest!
@@ -159,8 +136,6 @@ export const typeDefs = `#graphql
     createSubmission(input: CreateSubmissionInput!): Submission!
     deleteSubmission(id: ID!): Submission!
 
-    castVote(input: CastVoteInput!): Vote!
-
     finalizeContest(id: ID!): FinalizeResult!
   }
-`
+`;

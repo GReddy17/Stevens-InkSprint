@@ -7,9 +7,7 @@ import User from '../models/User.js';
  * @returns {Promise<Object|null>} - Returns user object from database or null if invalid
  */
 export async function authenticateUser(token) {
-  if (!token) {
-    return null;
-  }
+  if (!token) return null;
 
   try {
     const decodedToken = await admin.auth().verifyIdToken(token);
@@ -19,12 +17,10 @@ export async function authenticateUser(token) {
 
     let user = await User.findOne({ firebaseUid });
     if (!user) {
-      // Create a new user record (role defaults to PARTICIPANT)
       user = await User.create({
         firebaseUid,
         email,
         displayName: name,
-        role: 'PARTICIPANT',
       });
     } else {
       if (user.email !== email) user.email = email;
@@ -37,10 +33,8 @@ export async function authenticateUser(token) {
       firebaseUid: user.firebaseUid,
       email: user.email,
       displayName: user.displayName,
-      role: user.role,
     };
   } catch (error) {
-    console.error('Authentication error:', error.message);
     return null;
   }
 }
@@ -50,11 +44,10 @@ export async function authenticateUser(token) {
  * Expects header: Authorization: Bearer <token>
  */
 export function extractTokenFromHeader(req) {
-  console.log('Full headers:', req.headers);
   const authHeader = req.headers.authorization;
-  console.log('Authorization header:', authHeader);
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     return null;
   }
-  return authHeader.split(' ')[1];
+  const token = authHeader.split(' ')[1];
+  return token;
 }
