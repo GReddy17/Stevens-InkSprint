@@ -35,6 +35,7 @@ export async function authenticateUser(token) {
       displayName: user.displayName,
     };
   } catch (error) {
+    console.error('Authentication error:', error.message);
     return null;
   }
 }
@@ -45,9 +46,6 @@ export async function authenticateUser(token) {
  */
 export function extractTokenFromHeader(req) {
   const authHeader = req.headers.authorization;
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return null;
-  }
-  const token = authHeader.split(' ')[1];
-  return token;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) return null;
+  return authHeader.split(' ')[1];
 }
