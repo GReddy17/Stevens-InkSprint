@@ -1,5 +1,19 @@
 # The Ink Sprint: A Competitive Writing Tournament Platform
 
+## Commands to run
+
+# Build + start all containers
+docker-compose up --build
+
+# Start in background
+docker-compose up -d --build
+
+# Stop all
+docker-compose down
+
+# View logs
+docker-compose logs -f
+
 ## Project Overview
 
 The Ink Sprint is a web application designed for hosting creative writing competitions where participants submit entries within a defined time window (ranging from hours to days), after which submissions are reviewed and winners are selected. The platform will manage contests, user participation, secure submissions, and judging workflows while providing downloadable results for participants.

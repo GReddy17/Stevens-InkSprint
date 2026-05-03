@@ -318,8 +318,8 @@ export const resolvers = {
       const contest = await Contest.findById(id)
       if (!contest) throw new Error('Contest not found')
 
-      if (!['VOTING', 'JUDGING', 'CLOSED'].includes(contest.status)) {
-        throw new Error('Contest must be in VOTING, JUDGING, or CLOSED status to finalize')
+      if (!['VOTING'].includes(contest.status)) {
+        throw new Error('Contest must be in VOTING status to finalize')
       }
 
       const submissions = await Submission.find({ contestId: id }).sort({ totalScore: -1 })

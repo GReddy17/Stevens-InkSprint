@@ -9,8 +9,8 @@ dotenv.config()
 
 const seed = async () => {
   try {
-    await connectToMongo()
-    console.log('Connected to MongoDB')
+    // Server already connected - skip duplicate connection
+    console.log('Seeding existing connection...')
 
     await User.deleteMany({});
     await Contest.deleteMany({});
@@ -90,7 +90,7 @@ const seed = async () => {
     console.log(`Submissions: ${totalSubmissions}`);
     console.log('Votes: 0 (voting functionality removed)');
 
-    await mongoose.connection.close();
+    // Don't close connection - let server use it
     console.log('\nDatabase seeded successfully!');
   } catch (error) {
     console.error('Seed error:', error);
@@ -98,4 +98,6 @@ const seed = async () => {
   }
 };
 
-seed()
+if (process.env.SEED === 'true') {
+  seed();
+}

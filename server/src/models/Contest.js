@@ -24,7 +24,7 @@ const contestSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ['UPCOMING', 'ACTIVE', 'CLOSED', 'VOTING', 'JUDGING', 'COMPLETED'],
+      enum: ['UPCOMING', 'ACTIVE', 'VOTING', 'COMPLETED'],
       default: 'UPCOMING',
       index: true,
     },
