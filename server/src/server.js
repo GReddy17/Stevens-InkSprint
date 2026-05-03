@@ -5,6 +5,10 @@ import { resolvers } from './schema/resolvers.js';
 import { connectToMongo } from './config/mongoConnection.js';
 import { authenticateUser, extractTokenFromHeader } from './middlewares/auth.js';
 
+if (process.env.SEED === 'true') {
+  await import('./data/seed.js');
+}
+
 const port = Number(process.env.PORT) || 4000;
 
 await connectToMongo();

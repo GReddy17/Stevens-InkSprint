@@ -3,9 +3,7 @@ export const typeDefs = `#graphql
   enum ContestStatus {
     UPCOMING
     ACTIVE
-    CLOSED
     VOTING
-    JUDGING
     COMPLETED
   }
 
@@ -66,6 +64,15 @@ export const typeDefs = `#graphql
     submissions: [Submission!]!
   }
 
+  type Vote {
+    id: ID!
+    contest: Contest!
+    submission: Submission!
+    voter: User!
+    points: Int!
+    votedAt: String!
+  }
+
   input CreateContestInput {
     title: String!
     prompt: String!
@@ -105,6 +112,13 @@ export const typeDefs = `#graphql
     description: String
   }
 
+  input CreateVoteInput {
+    contestId: ID!
+    submissionId: ID!
+    voterId: ID!
+    points: Int!
+  }
+
   type Query {
 
     healthCheck: String!
@@ -120,6 +134,8 @@ export const typeDefs = `#graphql
     submission(id: ID!): Submission
     submissionsByContest(contestId: ID!): [Submission!]!
     submissionsByUser(authorId: ID!): [Submission!]!
+    votesBySubmission(submissionId: ID!): [Vote!]
+    votesByContest(contestId: ID!): [Vote!]
   }
 
   type Mutation {
@@ -135,6 +151,8 @@ export const typeDefs = `#graphql
 
     createSubmission(input: CreateSubmissionInput!): Submission!
     deleteSubmission(id: ID!): Submission!
+
+    castVote(input: CreateVoteInput!): Vote!
 
     finalizeContest(id: ID!): FinalizeResult!
   }
