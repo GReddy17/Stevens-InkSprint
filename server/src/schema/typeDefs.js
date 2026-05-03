@@ -1,11 +1,8 @@
-// server/src/schema/typeDefs.js
 export const typeDefs = `#graphql
   enum ContestStatus {
     UPCOMING
     ACTIVE
-    CLOSED
     VOTING
-    JUDGING
     COMPLETED
   }
 
@@ -59,6 +56,16 @@ export const typeDefs = `#graphql
     certificateGeneratedAt: String
     createdAt: String!
     updatedAt: String!
+    votes: [Vote!]!
+  }
+
+  type Vote {
+    id: ID!
+    contest: Contest!
+    submission: Submission!
+    voter: User!
+    points: Int!
+    votedAt: String!
   }
 
   type FinalizeResult {
@@ -105,8 +112,14 @@ export const typeDefs = `#graphql
     description: String
   }
 
-  type Query {
+  input CastVoteInput {
+    contestId: ID!
+    submissionId: ID!
+    voterId: ID!
+    points: Int!
+  }
 
+  type Query {
     healthCheck: String!
 
     users: [User!]!
@@ -120,22 +133,23 @@ export const typeDefs = `#graphql
     submission(id: ID!): Submission
     submissionsByContest(contestId: ID!): [Submission!]!
     submissionsByUser(authorId: ID!): [Submission!]!
+
+    votesBySubmission(submissionId: ID!): [Vote!]!
+    votesByContest(contestId: ID!): [Vote!]!
   }
 
   type Mutation {
-
-    getDevToken(email: String!): String! 
-
     createUser(input: CreateUserInput!): User!
 
     createContest(input: CreateContestInput!): Contest!
     updateContest(id: ID!, input: UpdateContestInput!): Contest!
-    updateContestStatus(id: ID!, status: ContestStatus!): Contest!
     deleteContest(id: ID!): Contest!
 
     createSubmission(input: CreateSubmissionInput!): Submission!
     deleteSubmission(id: ID!): Submission!
 
+    castVote(input: CastVoteInput!): Vote!
+
     finalizeContest(id: ID!): FinalizeResult!
   }
-`;
+`

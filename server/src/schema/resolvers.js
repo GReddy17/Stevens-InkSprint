@@ -4,7 +4,45 @@ import Submission from '../models/Submission.js'
 import User from '../models/User.js'
 import admin from '../utils/firebaseAdmin.js';
 import Vote from '../models/Vote.js'
-import { validateString, validateEmail, validateContestStatus, validateVotingType, validateDates, validatePoints, validateWordLimits } from '../utils/validation.js'
+import { getRedis } from '../config/redisClient.js'
+import {
+  validateString,
+  validateEmail,
+  validateContestStatus,
+  validateVotingType,
+  validateDates,
+  validatePoints,
+  validateWordLimits,
+} from '../utils/validation.js'
+import { getContestStatus } from '../utils/helpers.js'
+
+// Cache helpers
+const cacheGet = async (key) => {
+  try {
+    const client = await getRedis()
+    if (!client) return null
+    const cached = await client.get(key)
+    return cached ? JSON.parse(cached) : null
+  } catch {
+    return null
+  }
+}
+
+const cacheSet = async (key, value, ttl = 300) => {
+  try {
+    const client = await getRedis()
+    if (!client) return
+    await client.set(key, JSON.stringify(value), { EX: ttl })
+  } catch {}
+}
+
+const cacheFlush = async () => {
+  try {
+    const client = await getRedis()
+    if (!client) return
+    await client.flushAll()
+  } catch {}
+}
 
 export const resolvers = {
   Query: {
@@ -36,7 +74,9 @@ export const resolvers = {
 
     contestsByStatus: async (_, { status }) => {
       const validStatus = validateContestStatus(status)
-      return await Contest.find({ status: validStatus }).sort({ createdAt: -1 })
+      const contests = await Contest.find({}).sort({ createdAt: -1 })
+
+      return contests.filter((contest) => getContestStatus(contest) === validStatus)
     },
 
     // Submissions
@@ -76,6 +116,10 @@ export const resolvers = {
   // Relationship resolvers
   Contest: {
     id: (parent) => parent._id.toString(),
+
+    status: (parent) => {
+      return getContestStatus(parent)
+    },
     createdBy: async (parent) => {
       return await User.findById(parent.createdBy);
     },
@@ -98,6 +142,9 @@ export const resolvers = {
     },
     author: async (parent) => {
       return await User.findById(parent.authorId);
+    },
+    votes: async (parent) => {
+      return await Vote.find({ submissionId: parent._id })
     },
   },
 
@@ -154,7 +201,6 @@ export const resolvers = {
         rules: rules?.trim() || null,
         startTime: start,
         endTime: end,
-        status: 'UPCOMING',
         createdBy,
         votingType: validVotingType,
         votingDurationHours: votingDurationHours || 48,
@@ -198,21 +244,6 @@ export const resolvers = {
       return updated
     },
 
-    // Update contest status
-    updateContestStatus: async (_, { id, status }) => {
-      if (!mongoose.Types.ObjectId.isValid(id)) throw new Error('Invalid contest ID')
-      const validStatus = validateContestStatus(status)
-      const contest = await Contest.findById(id)
-      if (!contest) throw new Error('Contest not found')
-
-      const updated = await Contest.findByIdAndUpdate(
-        id,
-        { $set: { status: validStatus } },
-        { new: true }
-      )
-      return updated
-    },
-
     // Delete contest
     deleteContest: async (_, { id }) => {
       if (!mongoose.Types.ObjectId.isValid(id)) throw new Error('Invalid contest ID')
@@ -238,7 +269,8 @@ export const resolvers = {
 
       const contest = await Contest.findById(contestId)
       if (!contest) throw new Error('Contest not found')
-      if (contest.status !== 'ACTIVE') throw new Error('Contest is not currently active')
+      const status = getContestStatus(contest)
+      if (status !== 'ACTIVE') throw new Error('Contest is not currently active')
 
       const author = await User.findById(authorId)
       if (!author) throw new Error('Author user not found')
@@ -283,7 +315,8 @@ export const resolvers = {
 
       const contest = await Contest.findById(contestId)
       if (!contest) throw new Error('Contest not found')
-      if (contest.status !== 'VOTING') throw new Error('Contest is not currently in voting phase')
+      const status = getContestStatus(contest)
+      if (status !== 'VOTING') throw new Error('Contest is not currently in voting phase')
 
       const submission = await Submission.findById(submissionId)
       if (!submission) throw new Error('Submission not found')
@@ -318,8 +351,10 @@ export const resolvers = {
       const contest = await Contest.findById(id)
       if (!contest) throw new Error('Contest not found')
 
-      if (!['VOTING', 'JUDGING', 'CLOSED'].includes(contest.status)) {
-        throw new Error('Contest must be in VOTING, JUDGING, or CLOSED status to finalize')
+      const status = getContestStatus(contest)
+
+      if (status !== 'COMPLETED') {
+        throw new Error('Contest voting period must be completed before finalizing')
       }
 
       const submissions = await Submission.find({ contestId: id }).sort({ totalScore: -1 })
@@ -342,13 +377,7 @@ export const resolvers = {
         })
       )
 
-      const finalizedContest = await Contest.findByIdAndUpdate(
-        id,
-        { $set: { status: 'COMPLETED' } },
-        { new: true }
-      )
-
-      return { contest: finalizedContest, submissions: updated }
+      return { contest, submissions: updated }
     },
   },
 };
