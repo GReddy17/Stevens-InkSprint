@@ -4,7 +4,45 @@ import Submission from '../models/Submission.js'
 import User from '../models/User.js'
 import admin from '../utils/firebaseAdmin.js';
 import Vote from '../models/Vote.js'
-import { validateString, validateEmail, validateContestStatus, validateVotingType, validateDates, validatePoints, validateWordLimits } from '../utils/validation.js'
+import { getRedis } from '../config/redisClient.js'
+import {
+  validateString,
+  validateEmail,
+  validateContestStatus,
+  validateVotingType,
+  validateDates,
+  validatePoints,
+  validateWordLimits,
+} from '../utils/validation.js'
+import { getContestStatus } from '../utils/helpers.js'
+
+// Cache helpers
+const cacheGet = async (key) => {
+  try {
+    const client = await getRedis()
+    if (!client) return null
+    const cached = await client.get(key)
+    return cached ? JSON.parse(cached) : null
+  } catch {
+    return null
+  }
+}
+
+const cacheSet = async (key, value, ttl = 300) => {
+  try {
+    const client = await getRedis()
+    if (!client) return
+    await client.set(key, JSON.stringify(value), { EX: ttl })
+  } catch {}
+}
+
+const cacheFlush = async () => {
+  try {
+    const client = await getRedis()
+    if (!client) return
+    await client.flushAll()
+  } catch {}
+}
 
 export const resolvers = {
   Query: {
@@ -36,7 +74,9 @@ export const resolvers = {
 
     contestsByStatus: async (_, { status }) => {
       const validStatus = validateContestStatus(status)
-      return await Contest.find({ status: validStatus }).sort({ createdAt: -1 })
+      const contests = await Contest.find({}).sort({ createdAt: -1 })
+
+      return contests.filter((contest) => getContestStatus(contest) === validStatus)
     },
 
     // Submissions
@@ -76,6 +116,10 @@ export const resolvers = {
   // Relationship resolvers
   Contest: {
     id: (parent) => parent._id.toString(),
+
+    status: (parent) => {
+      return getContestStatus(parent)
+    },
     createdBy: async (parent) => {
       return await User.findById(parent.createdBy);
     },
@@ -84,6 +128,11 @@ export const resolvers = {
     },
     submissionCount: async (parent) => {
       return await Submission.countDocuments({ contestId: parent._id });
+    },
+    votingGroupMembers: async (parent) => {
+      return await User.find({
+        _id: { $in: parent.votingGroupMemberIds || [] },
+      })
     },
   },
 
@@ -98,6 +147,9 @@ export const resolvers = {
     },
     author: async (parent) => {
       return await User.findById(parent.authorId);
+    },
+    votes: async (parent) => {
+      return await Vote.find({ submissionId: parent._id })
     },
   },
 
@@ -135,7 +187,7 @@ export const resolvers = {
 
     // Create contest
     createContest: async (_, { input }) => {
-      const { title, prompt, rules, startTime, endTime, createdBy, votingType, votingDurationHours, wordMin, wordMax } = input
+      const { title, prompt, rules, startTime, endTime, createdBy, votingType, votingGroupMemberIds, votingDurationHours, wordMin, wordMax } = input
 
       validateString(title, 'title')
       validateString(prompt, 'prompt')
@@ -148,15 +200,27 @@ export const resolvers = {
 
       const validVotingType = votingType ? validateVotingType(votingType) : 'EVERYONE'
 
+      if (validVotingType === 'JUDGES' && (!votingGroupMemberIds || votingGroupMemberIds.length === 0)) {
+        throw new Error('JUDGES votingType requires at least one votingGroupMemberId')
+      }
+
+      if (votingGroupMemberIds && votingGroupMemberIds.length > 0) {
+        const users = await User.find({ _id: { $in: votingGroupMemberIds } })
+
+        if (users.length !== votingGroupMemberIds.length) {
+          throw new Error('One or more votingGroupMemberIds are invalid users')
+        }
+      }
+
       const contest = await new Contest({
         title: title.trim(),
         prompt: prompt.trim(),
         rules: rules?.trim() || null,
         startTime: start,
         endTime: end,
-        status: 'UPCOMING',
         createdBy,
         votingType: validVotingType,
+        votingGroupMemberIds: votingGroupMemberIds || [],
         votingDurationHours: votingDurationHours || 48,
         wordMin: wordMin || null,
         wordMax: wordMax || null,
@@ -183,7 +247,11 @@ export const resolvers = {
         if (input.startTime) update.startTime = start
         if (input.endTime) update.endTime = end
       }
-      if (input.votingType) update.votingType = validateVotingType(input.votingType)
+      const newVotingType = input.votingType
+        ? validateVotingType(input.votingType)
+        : contest.votingType
+
+if (input.votingType) update.votingType = newVotingType
       if (input.votingDurationHours) update.votingDurationHours = input.votingDurationHours
       if (input.wordMin !== undefined || input.wordMax !== undefined) {
         validateWordLimits(
@@ -193,23 +261,29 @@ export const resolvers = {
         if (input.wordMin !== undefined) update.wordMin = input.wordMin
         if (input.wordMax !== undefined) update.wordMax = input.wordMax
       }
+      if (input.votingGroupMemberIds !== undefined) {
+        if (input.votingGroupMemberIds.length > 0) {
+          const users = await User.find({ _id: { $in: input.votingGroupMemberIds } })
 
-      const updated = await Contest.findByIdAndUpdate(id, { $set: update }, { new: true })
-      return updated
-    },
+          if (users.length !== input.votingGroupMemberIds.length) {
+            throw new Error('One or more votingGroupMemberIds are invalid users')
+          }
+        }
 
-    // Update contest status
-    updateContestStatus: async (_, { id, status }) => {
-      if (!mongoose.Types.ObjectId.isValid(id)) throw new Error('Invalid contest ID')
-      const validStatus = validateContestStatus(status)
-      const contest = await Contest.findById(id)
-      if (!contest) throw new Error('Contest not found')
+        update.votingGroupMemberIds = input.votingGroupMemberIds
+      }
 
-      const updated = await Contest.findByIdAndUpdate(
-        id,
-        { $set: { status: validStatus } },
-        { new: true }
-      )
+      const newVotingGroup = input.votingGroupMemberIds ?? contest.votingGroupMemberIds
+
+      if (newVotingType === 'JUDGES' && (!newVotingGroup || newVotingGroup.length === 0)) {
+        throw new Error('JUDGES votingType requires at least one votingGroupMemberId')
+      }
+
+      if (newVotingType !== 'JUDGES') {
+        update.votingGroupMemberIds = []
+      }
+
+      const updated = await Contest.findByIdAndUpdate(id, { $set: update }, { returnDocument: 'after' })
       return updated
     },
 
@@ -238,7 +312,8 @@ export const resolvers = {
 
       const contest = await Contest.findById(contestId)
       if (!contest) throw new Error('Contest not found')
-      if (contest.status !== 'ACTIVE') throw new Error('Contest is not currently active')
+      const status = getContestStatus(contest)
+      if (status !== 'ACTIVE') throw new Error('Contest is not currently active')
 
       const author = await User.findById(authorId)
       if (!author) throw new Error('Author user not found')
@@ -283,7 +358,8 @@ export const resolvers = {
 
       const contest = await Contest.findById(contestId)
       if (!contest) throw new Error('Contest not found')
-      if (contest.status !== 'VOTING') throw new Error('Contest is not currently in voting phase')
+      const status = getContestStatus(contest)
+      if (status !== 'VOTING') throw new Error('Contest is not currently in voting phase')
 
       const submission = await Submission.findById(submissionId)
       if (!submission) throw new Error('Submission not found')
@@ -291,6 +367,18 @@ export const resolvers = {
 
       const voter = await User.findById(voterId)
       if (!voter) throw new Error('Voter not found')
+
+      if (contest.votingType === 'JUDGES') {
+        if (!contest.votingGroupMemberIds.some(id => id.toString() === voterId)) {
+          throw new Error('You are not authorized to vote in this contest')
+        }
+      }
+
+      if (contest.votingType === 'CREATOR') {
+        if (contest.createdBy.toString() !== voterId) {
+          throw new Error('Only the contest creator can vote')
+        }
+      }
 
       if (submission.authorId.toString() === voterId) throw new Error('Cannot vote on your own submission')
 
@@ -318,8 +406,10 @@ export const resolvers = {
       const contest = await Contest.findById(id)
       if (!contest) throw new Error('Contest not found')
 
-      if (!['VOTING'].includes(contest.status)) {
-        throw new Error('Contest must be in VOTING status to finalize')
+      const status = getContestStatus(contest)
+
+      if (status !== 'COMPLETED') {
+        throw new Error('Contest voting period must be completed before finalizing')
       }
 
       const submissions = await Submission.find({ contestId: id }).sort({ totalScore: -1 })
@@ -337,18 +427,12 @@ export const resolvers = {
                 certificateGeneratedAt: new Date(),
               },
             },
-            { new: true }
+            { returnDocument: 'after' }
           )
         })
       )
 
-      const finalizedContest = await Contest.findByIdAndUpdate(
-        id,
-        { $set: { status: 'COMPLETED' } },
-        { new: true }
-      )
-
-      return { contest: finalizedContest, submissions: updated }
+      return { contest, submissions: updated }
     },
   },
 };
