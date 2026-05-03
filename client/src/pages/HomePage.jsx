@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { gql, useQuery } from '@apollo/client'
 import ContestCard from '../components/ContestCard'
-import SearchInput from '../components/SearchInput'
 
 const GET_CONTESTS = gql`
 	query GetContests {

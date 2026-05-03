@@ -1,5 +1,6 @@
 import { gql, useQuery } from '@apollo/client'
 import { Link } from 'react-router-dom'
+import ContestForm from '../components/ContestForm'
 
 const GET_CONTESTS_WITH_SUBMISSIONS = gql`
 	query GetContestsWithSubmissions {
