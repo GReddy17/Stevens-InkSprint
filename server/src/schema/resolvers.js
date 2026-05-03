@@ -129,6 +129,11 @@ export const resolvers = {
     submissionCount: async (parent) => {
       return await Submission.countDocuments({ contestId: parent._id });
     },
+    votingGroupMembers: async (parent) => {
+      return await User.find({
+        _id: { $in: parent.votingGroupMemberIds || [] },
+      })
+    },
   },
 
   User: {
@@ -182,7 +187,7 @@ export const resolvers = {
 
     // Create contest
     createContest: async (_, { input }) => {
-      const { title, prompt, rules, startTime, endTime, createdBy, votingType, votingDurationHours, wordMin, wordMax } = input
+      const { title, prompt, rules, startTime, endTime, createdBy, votingType, votingGroupMemberIds, votingDurationHours, wordMin, wordMax } = input
 
       validateString(title, 'title')
       validateString(prompt, 'prompt')
@@ -195,6 +200,18 @@ export const resolvers = {
 
       const validVotingType = votingType ? validateVotingType(votingType) : 'EVERYONE'
 
+      if (validVotingType === 'JUDGES' && (!votingGroupMemberIds || votingGroupMemberIds.length === 0)) {
+        throw new Error('JUDGES votingType requires at least one votingGroupMemberId')
+      }
+
+      if (votingGroupMemberIds && votingGroupMemberIds.length > 0) {
+        const users = await User.find({ _id: { $in: votingGroupMemberIds } })
+
+        if (users.length !== votingGroupMemberIds.length) {
+          throw new Error('One or more votingGroupMemberIds are invalid users')
+        }
+      }
+
       const contest = await new Contest({
         title: title.trim(),
         prompt: prompt.trim(),
@@ -203,6 +220,7 @@ export const resolvers = {
         endTime: end,
         createdBy,
         votingType: validVotingType,
+        votingGroupMemberIds: votingGroupMemberIds || [],
         votingDurationHours: votingDurationHours || 48,
         wordMin: wordMin || null,
         wordMax: wordMax || null,
@@ -229,7 +247,11 @@ export const resolvers = {
         if (input.startTime) update.startTime = start
         if (input.endTime) update.endTime = end
       }
-      if (input.votingType) update.votingType = validateVotingType(input.votingType)
+      const newVotingType = input.votingType
+        ? validateVotingType(input.votingType)
+        : contest.votingType
+
+if (input.votingType) update.votingType = newVotingType
       if (input.votingDurationHours) update.votingDurationHours = input.votingDurationHours
       if (input.wordMin !== undefined || input.wordMax !== undefined) {
         validateWordLimits(
@@ -239,8 +261,29 @@ export const resolvers = {
         if (input.wordMin !== undefined) update.wordMin = input.wordMin
         if (input.wordMax !== undefined) update.wordMax = input.wordMax
       }
+      if (input.votingGroupMemberIds !== undefined) {
+        if (input.votingGroupMemberIds.length > 0) {
+          const users = await User.find({ _id: { $in: input.votingGroupMemberIds } })
 
-      const updated = await Contest.findByIdAndUpdate(id, { $set: update }, { new: true })
+          if (users.length !== input.votingGroupMemberIds.length) {
+            throw new Error('One or more votingGroupMemberIds are invalid users')
+          }
+        }
+
+        update.votingGroupMemberIds = input.votingGroupMemberIds
+      }
+
+      const newVotingGroup = input.votingGroupMemberIds ?? contest.votingGroupMemberIds
+
+      if (newVotingType === 'JUDGES' && (!newVotingGroup || newVotingGroup.length === 0)) {
+        throw new Error('JUDGES votingType requires at least one votingGroupMemberId')
+      }
+
+      if (newVotingType !== 'JUDGES') {
+        update.votingGroupMemberIds = []
+      }
+
+      const updated = await Contest.findByIdAndUpdate(id, { $set: update }, { returnDocument: 'after' })
       return updated
     },
 
@@ -325,6 +368,18 @@ export const resolvers = {
       const voter = await User.findById(voterId)
       if (!voter) throw new Error('Voter not found')
 
+      if (contest.votingType === 'JUDGES') {
+        if (!contest.votingGroupMemberIds.some(id => id.toString() === voterId)) {
+          throw new Error('You are not authorized to vote in this contest')
+        }
+      }
+
+      if (contest.votingType === 'CREATOR') {
+        if (contest.createdBy.toString() !== voterId) {
+          throw new Error('Only the contest creator can vote')
+        }
+      }
+
       if (submission.authorId.toString() === voterId) throw new Error('Cannot vote on your own submission')
 
       const existingVote = await Vote.findOne({ submissionId, voterId })
@@ -372,7 +427,7 @@ export const resolvers = {
                 certificateGeneratedAt: new Date(),
               },
             },
-            { new: true }
+            { returnDocument: 'after' }
           )
         })
       )
