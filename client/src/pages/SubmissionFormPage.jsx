@@ -29,16 +29,6 @@ const CREATE_SUBMISSION = gql`
 	}
 `
 
-const GET_USERS = gql`
-	query GetUsers {
-		users {
-			id
-			displayName
-			email
-		}
-	}
-`
-
 // USE IDs FROM YOUR OWN SEEDED DATA OR THIS WILL BREAK - KT
 function SubmissionFormPage() {
 	const { contestId } = useParams()
@@ -57,10 +47,6 @@ function SubmissionFormPage() {
 		useMutation(CREATE_SUBMISSION)
 
 	const contest = data?.contest
-
-	const { data: userData } = useQuery(GET_USERS)
-
-	const authorId = userData?.users?.[0]?.id
 
 	const wordCount = useMemo(() => {
 		return submissionContent.trim() === ''
@@ -92,15 +78,10 @@ function SubmissionFormPage() {
 		}
 
 		try {
-			if (!authorId) {
-				setSubmitMessage('No users available. Please seed the database.')
-				return
-			}
 			const { data } = await createSubmission({
 				variables: {
 					input: {
 						contestId: contest.id,
-						authorId: authorId,
 						title: submissionTitle,
 						description: submissionDescription,
 						content: submissionContent,

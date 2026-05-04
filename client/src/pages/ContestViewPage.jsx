@@ -1,5 +1,7 @@
 import { gql, useQuery } from '@apollo/client'
-import { useParams } from 'react-router-dom'
+import { formatDate } from '../utils/contestHelpers'
+import { useParams, Link } from 'react-router-dom'
+import SubmissionCard from '../components/SubmissionCard'
 
 const GET_CONTEST = gql`
   query GetContest($contestId: ID!) {
@@ -15,9 +17,23 @@ const GET_CONTEST = gql`
       votingDurationHours
       wordMin
       wordMax
+      submissionCount
+
+      submissions {
+        id
+        title
+				description
+        content
+        voteCount
+        totalScore
+        author {
+          id
+          displayName
+        }
+      }
     }
   }
-`;
+`
 
 function ContestViewPage() {
 	const { contestId } = useParams()
@@ -48,14 +64,6 @@ function ContestViewPage() {
 				</div>
 			</div>
 		)
-	}
-
-	const formatDate = (value) => {
-		if (!value) return 'TBD'
-		const parsed = new Date(value)
-		return Number.isNaN(parsed.getTime())
-			? value
-			: parsed.toLocaleString()
 	}
 
 	return (
@@ -119,25 +127,25 @@ function ContestViewPage() {
 					</dl>
 				</div>
 
-				<div className="flex flex-wrap gap-3">
-					<button
-						type="button"
-						onClick={() => {
-							// TODO: route to submission form for this contest
-							console.log('Navigate to submission form for:', contest.id)
-						}}
-						className="bg-white text-gray-900 font-medium px-5 py-2.5 rounded-lg hover:bg-gray-200">
+				<div className="flex flex-col gap-4">
+					<Link
+						to={`/contests/${contest.id}/submit`}
+						className="bg-white border border-gray-700 text-center text-gray-900 font-medium max-w-48 self-center px-5 py-2.5 mb-6 rounded-lg hover:bg-gray-200"
+					>
 						Submit an Entry
-					</button>
-					<button
-						type="button"
-						onClick={() => {
-							// TODO: route to submissions list for this contest
-							console.log('View submissions for:', contest.id)
-						}}
-						className="bg-gray-800 border border-gray-700 text-white font-medium px-5 py-2.5 rounded-lg hover:bg-gray-700">
-						View Submissions
-					</button>
+					</Link>
+
+					<h2 className="text-2xl font-semibold">Submissions</h2>
+
+					{contest.submissionCount === 0 ? (
+						<p className="text-gray-400">No submissions yet.</p>
+					) : (
+						<div className="grid gap-4">
+							{contest.submissions.map((submission) => (
+								<SubmissionCard key={submission.id} submission={submission} />
+							))}
+						</div>
+					)}
 				</div>
 			</div>
 		</div>

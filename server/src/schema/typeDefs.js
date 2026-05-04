@@ -2,9 +2,7 @@ export const typeDefs = `#graphql
   enum ContestStatus {
     UPCOMING
     ACTIVE
-    CLOSED
     VOTING
-    JUDGING
     COMPLETED
   }
 
@@ -33,6 +31,8 @@ export const typeDefs = `#graphql
     status: ContestStatus!
     createdBy: User!
     votingType: VotingType!
+    votingGroupMemberIds: [ID!]!
+    votingGroupMembers: [User!]!
     votingDurationHours: Int!
     wordMin: Int
     wordMax: Int
@@ -75,14 +75,23 @@ export const typeDefs = `#graphql
     submissions: [Submission!]!
   }
 
+  type Vote {
+    id: ID!
+    contest: Contest!
+    submission: Submission!
+    voter: User!
+    points: Int!
+    votedAt: String!
+  }
+
   input CreateContestInput {
     title: String!
     prompt: String!
     rules: String
     startTime: String!
     endTime: String!
-    createdBy: ID!
     votingType: VotingType
+    votingGroupMemberIds: [ID!]
     votingDurationHours: Int
     wordMin: Int
     wordMax: Int
@@ -95,6 +104,7 @@ export const typeDefs = `#graphql
     startTime: String
     endTime: String
     votingType: VotingType
+    votingGroupMemberIds: [ID!]
     votingDurationHours: Int
     wordMin: Int
     wordMax: Int
@@ -108,13 +118,12 @@ export const typeDefs = `#graphql
 
   input CreateSubmissionInput {
     contestId: ID!
-    authorId: ID!
     content: String!
     title: String
     description: String
   }
 
-  input CastVoteInput {
+  input CreateVoteInput {
     contestId: ID!
     submissionId: ID!
     voterId: ID!
@@ -124,6 +133,7 @@ export const typeDefs = `#graphql
   type Query {
     healthCheck: String!
 
+    me: User
     users: [User!]!
     user(id: ID!): User
 
@@ -135,9 +145,8 @@ export const typeDefs = `#graphql
     submission(id: ID!): Submission
     submissionsByContest(contestId: ID!): [Submission!]!
     submissionsByUser(authorId: ID!): [Submission!]!
-
-    votesBySubmission(submissionId: ID!): [Vote!]!
-    votesByContest(contestId: ID!): [Vote!]!
+    votesBySubmission(submissionId: ID!): [Vote!]
+    votesByContest(contestId: ID!): [Vote!]
   }
 
   type Mutation {
@@ -145,13 +154,12 @@ export const typeDefs = `#graphql
 
     createContest(input: CreateContestInput!): Contest!
     updateContest(id: ID!, input: UpdateContestInput!): Contest!
-    updateContestStatus(id: ID!, status: ContestStatus!): Contest!
     deleteContest(id: ID!): Contest!
 
     createSubmission(input: CreateSubmissionInput!): Submission!
     deleteSubmission(id: ID!): Submission!
 
-    castVote(input: CastVoteInput!): Vote!
+    castVote(input: CreateVoteInput!): Vote!
 
     finalizeContest(id: ID!): FinalizeResult!
   }
