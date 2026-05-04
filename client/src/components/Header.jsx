@@ -24,6 +24,18 @@ function Header() {
 						className="text-gray-300 hover:text-white border border-white px-2">
 						Contest Form (Temp Link)
 					</Link>
+
+					<Link
+						to="/profiles/user-1"
+						className="text-gray-300 hover:text-white border border-white px-2">
+						View Profile (Temp Link)
+					</Link>
+
+					<Link
+						to="/profile/edit"
+						className="text-gray-300 hover:text-white border border-white px-2">
+						Edit Profile (Temp Link)
+					</Link>
 				</nav>
 			</div>
 		</header>
