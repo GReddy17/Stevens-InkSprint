@@ -42,7 +42,7 @@ const LoginForm = ({ onSubmit }) => {
 
     setErrors({});
 
-    // 🔌 Hook to backend
+    // Hook to backend
     if (onSubmit) {
       onSubmit(formData);
     } else {
