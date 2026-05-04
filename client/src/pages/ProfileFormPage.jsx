@@ -11,7 +11,7 @@ should redirect or show "please log in".
 */
 function useCurrentUserStub() {
 	return {
-		id: 'user-1',
+		id: '69dd79e6ddb8b4224c65fa1e',
 		displayName: 'Jordan Lee',
 		// NOTE: profilePictureUrl is NOT on the User model in the
 		// backend yet. Please add a `profilePictureUrl` field (String, optional)

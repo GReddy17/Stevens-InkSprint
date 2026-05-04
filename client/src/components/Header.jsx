@@ -26,7 +26,7 @@ function Header() {
 					</Link>
 
 					<Link
-						to="/profiles/user-1"
+						to="/profiles/69dd79e6ddb8b4224c65fa1e"
 						className="text-gray-300 hover:text-white border border-white px-2">
 						View Profile (Temp Link)
 					</Link>
