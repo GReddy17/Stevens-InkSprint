@@ -8,6 +8,8 @@ import ContestFormPage from './pages/ContestFormPage'
 import ContestViewPage from './pages/ContestViewPage'
 import NotFoundPage from './pages/NotFoundPage'
 import DevPage from './pages/DevPage'
+import ProfileViewPage from './pages/ProfileViewPage'
+import ProfileFormPage from './pages/ProfileFormPage'
 
 function App() {
   return (
@@ -21,6 +23,8 @@ function App() {
           <Route path='/contests/new' element={<ContestFormPage />} />
           <Route path="/contests/:contestId" element={<ContestViewPage />} />
           <Route path='/dev' element={<DevPage />} />
+          <Route path='/profiles/:userId' element={<ProfileViewPage />} />
+          <Route path='/profile/edit' element={<ProfileFormPage />} />
           <Route path='*' element={<NotFoundPage />} />
         </Routes>
       </main>
