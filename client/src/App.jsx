@@ -6,6 +6,9 @@ import SubmissionFormPage from './pages/SubmissionFormPage'
 import SubmissionViewPage from './pages/SubmissionViewPage'
 import ContestFormPage from './pages/ContestFormPage'
 import ContestViewPage from './pages/ContestViewPage'
+import ViewAllContestsPage from './pages/ViewAllContestsPage'
+import SignupPage from './pages/SignupPage'
+import LoginPage from './pages/LoginPage'
 import NotFoundPage from './pages/NotFoundPage'
 import DevPage from './pages/DevPage'
 import ProfileViewPage from './pages/ProfileViewPage'
@@ -22,6 +25,9 @@ function App() {
           <Route path='/submissions/:submissionId' element={<SubmissionViewPage />} />
           <Route path='/contests/new' element={<ContestFormPage />} />
           <Route path="/contests/:contestId" element={<ContestViewPage />} />
+          <Route path="/contests/" element={<ViewAllContestsPage />} />
+          <Route path="/login/" element={<LoginPage />} />
+          <Route path="/signup/" element={<SignupPage />} />
           <Route path='/dev' element={<DevPage />} />
           <Route path='/profiles/:userId' element={<ProfileViewPage />} />
           <Route path='/profile/edit' element={<ProfileFormPage />} />

@@ -2,6 +2,7 @@ import mongoose from 'mongoose'
 import Contest from '../models/Contest.js'
 import Submission from '../models/Submission.js'
 import User from '../models/User.js'
+import admin from '../utils/firebaseAdmin.js';
 import Vote from '../models/Vote.js'
 import { getRedis } from '../config/redisClient.js'
 import {
@@ -13,6 +14,7 @@ import {
   validatePoints,
   validateWordLimits,
 } from '../utils/validation.js'
+import { getContestStatus } from '../utils/helpers.js'
 
 // Cache helpers
 const cacheGet = async (key) => {
@@ -45,122 +47,95 @@ const cacheFlush = async () => {
 export const resolvers = {
   Query: {
     healthCheck: () => 'Ink Sprint GraphQL server is running',
-
+    
     // Users
+    me: async (_, __, context) => {
+      return context.user
+    },
     users: async () => {
-      const cached = await cacheGet('users')
-      if (cached) return cached
-      const data = await User.find({})
-      await cacheSet('users', data)
-      return data
+      return await User.find({});
     },
 
     user: async (_, { id }) => {
       if (!mongoose.Types.ObjectId.isValid(id)) throw new Error('Invalid user ID')
-      const cached = await cacheGet(`user:${id}`)
-      if (cached) return cached
       const user = await User.findById(id)
       if (!user) throw new Error('User not found')
-      await cacheSet(`user:${id}`, user)
       return user
     },
 
     // Contests
     contests: async () => {
-      const cached = await cacheGet('contests')
-      if (cached) return cached
-      const data = await Contest.find({}).sort({ createdAt: -1 })
-      await cacheSet('contests', data)
-      return data
+      return await Contest.find({}).sort({ createdAt: -1 })
     },
 
     contest: async (_, { id }) => {
       if (!mongoose.Types.ObjectId.isValid(id)) throw new Error('Invalid contest ID')
-      const cached = await cacheGet(`contest:${id}`)
-      if (cached) return cached
       const contest = await Contest.findById(id)
       if (!contest) throw new Error('Contest not found')
-      await cacheSet(`contest:${id}`, contest)
       return contest
     },
 
     contestsByStatus: async (_, { status }) => {
       const validStatus = validateContestStatus(status)
-      const cached = await cacheGet(`contests:status:${validStatus}`)
-      if (cached) return cached
-      const data = await Contest.find({ status: validStatus }).sort({ createdAt: -1 })
-      await cacheSet(`contests:status:${validStatus}`, data)
-      return data
+      const contests = await Contest.find({}).sort({ createdAt: -1 })
+
+      return contests.filter((contest) => getContestStatus(contest) === validStatus)
     },
 
     // Submissions
     submissions: async () => {
-      const cached = await cacheGet('submissions')
-      if (cached) return cached
-      const data = await Submission.find({}).sort({ submittedAt: -1 })
-      await cacheSet('submissions', data)
-      return data
+      return await Submission.find({}).sort({ submittedAt: -1 })
     },
 
     submission: async (_, { id }) => {
       if (!mongoose.Types.ObjectId.isValid(id)) throw new Error('Invalid submission ID')
-      const cached = await cacheGet(`submission:${id}`)
-      if (cached) return cached
       const submission = await Submission.findById(id)
       if (!submission) throw new Error('Submission not found')
-      await cacheSet(`submission:${id}`, submission)
       return submission
     },
 
     submissionsByContest: async (_, { contestId }) => {
       if (!mongoose.Types.ObjectId.isValid(contestId)) throw new Error('Invalid contest ID')
-      const cached = await cacheGet(`submissions:contest:${contestId}`)
-      if (cached) return cached
-      const data = await Submission.find({ contestId }).sort({ totalScore: -1 })
-      await cacheSet(`submissions:contest:${contestId}`, data)
-      return data
+      return await Submission.find({ contestId }).sort({ totalScore: -1 })
     },
 
     submissionsByUser: async (_, { authorId }) => {
       if (!mongoose.Types.ObjectId.isValid(authorId)) throw new Error('Invalid user ID')
-      const cached = await cacheGet(`submissions:user:${authorId}`)
-      if (cached) return cached
-      const data = await Submission.find({ authorId }).sort({ submittedAt: -1 })
-      await cacheSet(`submissions:user:${authorId}`, data)
-      return data
+      return await Submission.find({ authorId }).sort({ submittedAt: -1 })
     },
 
     // Votes
     votesBySubmission: async (_, { submissionId }) => {
       if (!mongoose.Types.ObjectId.isValid(submissionId)) throw new Error('Invalid submission ID')
-      const cached = await cacheGet(`votes:submission:${submissionId}`)
-      if (cached) return cached
-      const data = await Vote.find({ submissionId })
-      await cacheSet(`votes:submission:${submissionId}`, data)
-      return data
+      return await Vote.find({ submissionId })
     },
 
     votesByContest: async (_, { contestId }) => {
       if (!mongoose.Types.ObjectId.isValid(contestId)) throw new Error('Invalid contest ID')
-      const cached = await cacheGet(`votes:contest:${contestId}`)
-      if (cached) return cached
-      const data = await Vote.find({ contestId })
-      await cacheSet(`votes:contest:${contestId}`, data)
-      return data
+      return await Vote.find({ contestId })
     },
   },
 
   // Relationship resolvers
   Contest: {
     id: (parent) => parent._id.toString(),
+
+    status: (parent) => {
+      return getContestStatus(parent)
+    },
     createdBy: async (parent) => {
-      return await User.findById(parent.createdBy)
+      return await User.findById(parent.createdBy);
     },
     submissions: async (parent) => {
-      return await Submission.find({ contestId: parent._id }).sort({ totalScore: -1 })
+      return await Submission.find({ contestId: parent._id }).sort({ totalScore: -1 });
     },
     submissionCount: async (parent) => {
-      return await Submission.countDocuments({ contestId: parent._id })
+      return await Submission.countDocuments({ contestId: parent._id });
+    },
+    votingGroupMembers: async (parent) => {
+      return await User.find({
+        _id: { $in: parent.votingGroupMemberIds || [] },
+      })
     },
   },
 
@@ -171,10 +146,10 @@ export const resolvers = {
   Submission: {
     id: (parent) => parent._id.toString(),
     contest: async (parent) => {
-      return await Contest.findById(parent.contestId)
+      return await Contest.findById(parent.contestId);
     },
     author: async (parent) => {
-      return await User.findById(parent.authorId)
+      return await User.findById(parent.authorId);
     },
     votes: async (parent) => {
       return await Vote.find({ submissionId: parent._id })
@@ -210,24 +185,49 @@ export const resolvers = {
         displayName: displayName?.trim() || null,
       }).save()
 
-      await cacheFlush()
       return user
     },
 
     // Create contest
-    createContest: async (_, { input }) => {
-      const { title, prompt, rules, startTime, endTime, createdBy, votingType, votingDurationHours, wordMin, wordMax } = input
+    createContest: async (_, { input }, context) => {
+      if (!context.user) throw new Error('You must be logged in to create a contest')
+
+      const {
+        title,
+        prompt,
+        rules,
+        startTime,
+        endTime,
+        votingType,
+        votingGroupMemberIds,
+        votingDurationHours,
+        wordMin,
+        wordMax,
+      } = input
 
       validateString(title, 'title')
       validateString(prompt, 'prompt')
       const { start, end } = validateDates(startTime, endTime)
       validateWordLimits(wordMin, wordMax)
 
-      if (!mongoose.Types.ObjectId.isValid(createdBy)) throw new Error('Invalid createdBy user ID')
-      const creator = await User.findById(createdBy)
-      if (!creator) throw new Error('Creator user not found')
+      const createdBy = context.user.id
 
       const validVotingType = votingType ? validateVotingType(votingType) : 'EVERYONE'
+
+      if (
+        validVotingType === 'JUDGES' &&
+        (!votingGroupMemberIds || votingGroupMemberIds.length === 0)
+      ) {
+        throw new Error('JUDGES votingType requires at least one votingGroupMemberId')
+      }
+
+      if (votingGroupMemberIds && votingGroupMemberIds.length > 0) {
+        const users = await User.find({ _id: { $in: votingGroupMemberIds } })
+
+        if (users.length !== votingGroupMemberIds.length) {
+          throw new Error('One or more votingGroupMemberIds are invalid users')
+        }
+      }
 
       const contest = await new Contest({
         title: title.trim(),
@@ -235,15 +235,14 @@ export const resolvers = {
         rules: rules?.trim() || null,
         startTime: start,
         endTime: end,
-        status: 'UPCOMING',
         createdBy,
         votingType: validVotingType,
+        votingGroupMemberIds: votingGroupMemberIds || [],
         votingDurationHours: votingDurationHours || 48,
         wordMin: wordMin || null,
         wordMax: wordMax || null,
       }).save()
 
-      await cacheFlush()
       return contest
     },
 
@@ -265,7 +264,11 @@ export const resolvers = {
         if (input.startTime) update.startTime = start
         if (input.endTime) update.endTime = end
       }
-      if (input.votingType) update.votingType = validateVotingType(input.votingType)
+      const newVotingType = input.votingType
+        ? validateVotingType(input.votingType)
+        : contest.votingType
+
+      if (input.votingType) update.votingType = newVotingType
       if (input.votingDurationHours) update.votingDurationHours = input.votingDurationHours
       if (input.wordMin !== undefined || input.wordMax !== undefined) {
         validateWordLimits(
@@ -275,25 +278,29 @@ export const resolvers = {
         if (input.wordMin !== undefined) update.wordMin = input.wordMin
         if (input.wordMax !== undefined) update.wordMax = input.wordMax
       }
+      if (input.votingGroupMemberIds !== undefined) {
+        if (input.votingGroupMemberIds.length > 0) {
+          const users = await User.find({ _id: { $in: input.votingGroupMemberIds } })
 
-      const updated = await Contest.findByIdAndUpdate(id, { $set: update }, { new: true })
-      await cacheFlush()
-      return updated
-    },
+          if (users.length !== input.votingGroupMemberIds.length) {
+            throw new Error('One or more votingGroupMemberIds are invalid users')
+          }
+        }
 
-    // Update contest status
-    updateContestStatus: async (_, { id, status }) => {
-      if (!mongoose.Types.ObjectId.isValid(id)) throw new Error('Invalid contest ID')
-      const validStatus = validateContestStatus(status)
-      const contest = await Contest.findById(id)
-      if (!contest) throw new Error('Contest not found')
+        update.votingGroupMemberIds = input.votingGroupMemberIds
+      }
 
-      const updated = await Contest.findByIdAndUpdate(
-        id,
-        { $set: { status: validStatus } },
-        { new: true }
-      )
-      await cacheFlush()
+      const newVotingGroup = input.votingGroupMemberIds ?? contest.votingGroupMemberIds
+
+      if (newVotingType === 'JUDGES' && (!newVotingGroup || newVotingGroup.length === 0)) {
+        throw new Error('JUDGES votingType requires at least one votingGroupMemberId')
+      }
+
+      if (newVotingType !== 'JUDGES') {
+        update.votingGroupMemberIds = []
+      }
+
+      const updated = await Contest.findByIdAndUpdate(id, { $set: update }, { returnDocument: 'after' })
       return updated
     },
 
@@ -303,31 +310,31 @@ export const resolvers = {
       const contest = await Contest.findById(id)
       if (!contest) throw new Error('Contest not found')
 
-      // Remove all related submissions and votes
       const submissions = await Submission.find({ contestId: id })
       const submissionIds = submissions.map((s) => s._id)
       await Vote.deleteMany({ submissionId: { $in: submissionIds } })
       await Submission.deleteMany({ contestId: id })
       await Contest.findByIdAndDelete(id)
 
-      await cacheFlush()
       return contest
     },
 
     // Create submission
-    createSubmission: async (_, { input }) => {
-      const { contestId, authorId, content, title, description } = input
+    createSubmission: async (_, { input }, context) => {
+       if (!context.user) {
+        throw new Error('You must be logged in to submit')
+      }
+
+      const { contestId, content, title, description } = input
+      const authorId = context.user.id
 
       if (!mongoose.Types.ObjectId.isValid(contestId)) throw new Error('Invalid contest ID')
-      if (!mongoose.Types.ObjectId.isValid(authorId)) throw new Error('Invalid author ID')
       validateString(content, 'content')
 
       const contest = await Contest.findById(contestId)
       if (!contest) throw new Error('Contest not found')
-      if (contest.status !== 'ACTIVE') throw new Error('Contest is not currently active')
-
-      const author = await User.findById(authorId)
-      if (!author) throw new Error('Author user not found')
+      const status = getContestStatus(contest)
+      if (status !== 'ACTIVE') throw new Error('Contest is not currently active')
 
       const existing = await Submission.findOne({ contestId, authorId })
       if (existing) throw new Error('User has already submitted to this contest')
@@ -343,7 +350,6 @@ export const resolvers = {
         totalScore: 0,
       }).save()
 
-      await cacheFlush()
       return submission
     },
 
@@ -356,7 +362,6 @@ export const resolvers = {
       await Vote.deleteMany({ submissionId: id })
       await Submission.findByIdAndDelete(id)
 
-      await cacheFlush()
       return submission
     },
 
@@ -371,7 +376,8 @@ export const resolvers = {
 
       const contest = await Contest.findById(contestId)
       if (!contest) throw new Error('Contest not found')
-      if (contest.status !== 'VOTING') throw new Error('Contest is not currently in voting phase')
+      const status = getContestStatus(contest)
+      if (status !== 'VOTING') throw new Error('Contest is not currently in voting phase')
 
       const submission = await Submission.findById(submissionId)
       if (!submission) throw new Error('Submission not found')
@@ -380,10 +386,20 @@ export const resolvers = {
       const voter = await User.findById(voterId)
       if (!voter) throw new Error('Voter not found')
 
-      // Cannot vote on own submission
+      if (contest.votingType === 'JUDGES') {
+        if (!contest.votingGroupMemberIds.some(id => id.toString() === voterId)) {
+          throw new Error('You are not authorized to vote in this contest')
+        }
+      }
+
+      if (contest.votingType === 'CREATOR') {
+        if (contest.createdBy.toString() !== voterId) {
+          throw new Error('Only the contest creator can vote')
+        }
+      }
+
       if (submission.authorId.toString() === voterId) throw new Error('Cannot vote on your own submission')
 
-      // Check already voted on this submission
       const existingVote = await Vote.findOne({ submissionId, voterId })
       if (existingVote) throw new Error('You have already voted on this submission')
 
@@ -395,12 +411,10 @@ export const resolvers = {
         votedAt: new Date(),
       }).save()
 
-      // Update submission score
       await Submission.findByIdAndUpdate(submissionId, {
         $inc: { voteCount: 1, totalScore: points },
       })
 
-      await cacheFlush()
       return vote
     },
 
@@ -410,13 +424,14 @@ export const resolvers = {
       const contest = await Contest.findById(id)
       if (!contest) throw new Error('Contest not found')
 
-      if (!['VOTING', 'JUDGING', 'CLOSED'].includes(contest.status)) {
-        throw new Error('Contest must be in VOTING, JUDGING, or CLOSED status to finalize')
+      const status = getContestStatus(contest)
+
+      if (status !== 'COMPLETED') {
+        throw new Error('Contest voting period must be completed before finalizing')
       }
 
       const submissions = await Submission.find({ contestId: id }).sort({ totalScore: -1 })
 
-      // Assign placements and certificate URLs
       const updated = await Promise.all(
         submissions.map(async (sub, index) => {
           const placement = index + 1
@@ -430,19 +445,12 @@ export const resolvers = {
                 certificateGeneratedAt: new Date(),
               },
             },
-            { new: true }
+            { returnDocument: 'after' }
           )
         })
       )
 
-      const finalizedContest = await Contest.findByIdAndUpdate(
-        id,
-        { $set: { status: 'COMPLETED' } },
-        { new: true }
-      )
-
-      await cacheFlush()
-      return { contest: finalizedContest, submissions: updated }
+      return { contest, submissions: updated }
     },
   },
-}
+};

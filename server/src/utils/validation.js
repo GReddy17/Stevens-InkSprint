@@ -1,5 +1,5 @@
-const VALID_STATUSES = ['UPCOMING', 'ACTIVE', 'CLOSED', 'VOTING', 'JUDGING', 'COMPLETED']
-const VALID_VOTING_TYPES = ['EVERYONE', 'JUDGES', 'CREATOR', 'GROUP']
+const VALID_STATUSES = ['UPCOMING', 'ACTIVE', 'VOTING', 'COMPLETED']
+const VALID_VOTING_TYPES = ['EVERYONE', 'JUDGES', 'CREATOR']
 
 export function validateString(value, fieldName) {
   if (!value || typeof value !== 'string' || !value.trim()) {

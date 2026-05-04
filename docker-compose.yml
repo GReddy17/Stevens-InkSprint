@@ -1,0 +1,54 @@
+services:
+  # The backend API server
+  server:
+    build: ./server
+    ports:
+      - "4000:4000"
+    env_file:
+      - .env
+    environment:
+      - PORT=4000
+      - MONGODB_URI=mongodb://mongo:27017/inksprint
+      - REDIS_URL=redis://redis:6379
+      - SEED=false
+    depends_on:
+      - mongo
+      - redis
+    restart: on-failure
+    logging:
+      driver: "none"
+
+  # The React frontend
+  client:
+    build: ./client
+    ports:
+      - "5173:5173"
+    environment:
+      - VITE_API_URL=http://server:4000
+    depends_on:
+      - server
+    restart: on-failure
+    logging:
+      driver: "none"
+
+  # MongoDB database
+  mongo:
+    image: mongo:latest
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    logging:
+      driver: "none"
+    command: mongod --quiet
+
+  # Redis cache
+  redis:
+    image: redis:alpine
+    ports:
+      - "6379:6379"
+    logging:
+      driver: "none"
+
+volumes:
+  mongo_data:
