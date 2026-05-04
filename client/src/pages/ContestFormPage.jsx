@@ -38,7 +38,6 @@ function ContestFormPage() {
             votingGroupMemberIds: payload.votingGroupMemberIds || [],
             wordMin: payload.wordMin,
             wordMax: payload.wordMax,
-            createdBy: 'PASTE_TEMP_USER_ID_HERE',
           },
         },
       })
