@@ -54,6 +54,11 @@ function ViewAllContestsPage() {
 
 	return (
 		<div className="space-y-10">
+			<Link
+				to="/contests/new"
+				className="block text-center max-w-md bg-white text-gray-900 font-medium mx-auto my-6 py-2 rounded-lg hover:bg-gray-200 transition">
+				Create a Contest
+			</Link>
 			<section>
 				<div className="flex flex-wrap items-end justify-between gap-4 mb-6">
 					<div>
