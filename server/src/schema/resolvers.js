@@ -366,12 +366,16 @@ export const resolvers = {
     },
 
     // Cast vote
-    castVote: async (_, { input }) => {
-      const { contestId, submissionId, voterId, points } = input
+    castVote: async (_, { input }, context) => {
+      if (!context.user) {
+        throw new Error('You must be logged in to vote')
+      }
+
+      const { contestId, submissionId, points } = input
+      const voterId = context.user.id
 
       if (!mongoose.Types.ObjectId.isValid(contestId)) throw new Error('Invalid contest ID')
       if (!mongoose.Types.ObjectId.isValid(submissionId)) throw new Error('Invalid submission ID')
-      if (!mongoose.Types.ObjectId.isValid(voterId)) throw new Error('Invalid voter ID')
       validatePoints(points)
 
       const contest = await Contest.findById(contestId)

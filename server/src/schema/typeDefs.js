@@ -123,10 +123,9 @@ export const typeDefs = `#graphql
     description: String
   }
 
-  input CreateVoteInput {
+  input CastVoteInput {
     contestId: ID!
     submissionId: ID!
-    voterId: ID!
     points: Int!
   }
 
@@ -159,7 +158,7 @@ export const typeDefs = `#graphql
     createSubmission(input: CreateSubmissionInput!): Submission!
     deleteSubmission(id: ID!): Submission!
 
-    castVote(input: CreateVoteInput!): Vote!
+    castVote(input: CastVoteInput!): Vote!
 
     finalizeContest(id: ID!): FinalizeResult!
   }
