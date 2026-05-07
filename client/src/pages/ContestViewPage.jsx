@@ -23,16 +23,18 @@ const GET_CONTEST = gql`
 				id
 				title
 				description
-				content
-				voteCount
-				totalScore
-				author {
-					id
-					displayName
-				}
-			}
-		}
-	}
+        content
+        voteCount
+        totalScore
+        placement
+        certificateUrl
+        author {
+          id
+          displayName
+        }
+      }
+    }
+  }
 `
 
 function ContestViewPage() {
