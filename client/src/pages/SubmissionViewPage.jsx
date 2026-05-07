@@ -203,9 +203,18 @@ function SubmissionViewPage() {
 				{submission.certificateUrl && (
 					<div className="bg-gray-800 border border-gray-700 rounded-xl p-6">
 						<h2 className="text-xl font-semibold mb-2">Certificate</h2>
-						<p className="text-gray-400 text-sm">
-							Certificate available at: {submission.certificateUrl}
+						<p className="text-gray-400 text-sm mb-4">
+							{submission.placement === 1 && "🏆 Congratulations on your win!"}
+							{submission.placement === 2 && "🥈 Great job on second place!"}
+							{submission.placement === 3 && "🥉 Nice work on third place!"}
+							{submission.placement > 3 && `You placed ${submission.placement}th`}
 						</p>
+						<a
+							href={`http://localhost:4000${submission.certificateUrl}`}
+							download
+							className="inline-block bg-yellow-600 hover:bg-yellow-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors">
+							Download Certificate
+						</a>
 					</div>
 				)}
 			</div>

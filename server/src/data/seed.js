@@ -11,8 +11,9 @@ dotenv.config()
 
 const seed = async () => {
   try {
-    // Server already connected - skip duplicate connection
-    console.log('Seeding existing connection...')
+    // Ensure connection before seeding
+    await connectToMongo()
+    console.log('Seeding...')
 
     await User.deleteMany({})
     await Contest.deleteMany({})
@@ -292,6 +293,62 @@ const seed = async () => {
     console.log(`Contests: ${contestTemplates.length}`)
     console.log(`Submissions: ${totalSubmissions}`)
     console.log(`Votes: ${totalVotes}`)
+
+    // Seed certificate data for testing different scenarios
+    // 1st place with cert
+    const echoSubmissions = await Submission.find({ title: { $regex: 'Echoes' } }).sort({ totalScore: -1 })
+    if (echoSubmissions[0]) {
+      await Submission.findByIdAndUpdate(echoSubmissions[0]._id, {
+        $set: {
+          placement: 1,
+          certificateUrl: '/certs/test_contest_1st_Test_Winner_test1.png',
+          certificateGeneratedAt: new Date('2026-05-01'),
+        },
+      })
+      console.log('Seeded: 1st place with cert (Echoes)')
+    }
+
+    // 2nd place with cert
+    if (echoSubmissions[1]) {
+      await Submission.findByIdAndUpdate(echoSubmissions[1]._id, {
+        $set: {
+          placement: 2,
+          certificateUrl: '/certs/test_contest_2nd_Second_Place_test2.png',
+          certificateGeneratedAt: new Date('2026-05-02'),
+        },
+      })
+      console.log('Seeded: 2nd place with cert (Echoes)')
+    }
+
+    // 3rd place with cert
+    if (echoSubmissions[2]) {
+      await Submission.findByIdAndUpdate(echoSubmissions[2]._id, {
+        $set: {
+          placement: 3,
+          certificateUrl: '/certs/test_contest_3rd_Third_Place_test3.png',
+          certificateGeneratedAt: new Date('2026-05-03'),
+        },
+      })
+      console.log('Seeded: 3rd place with cert (Echoes)')
+    }
+
+    // No cert (no placement) - Stranger in Mirror submissions stay without cert
+    const mirrorSubmissions = await Submission.find({ title: { $regex: 'Stranger in Mirror' } })
+    console.log(`Seeded: ${mirrorSubmissions.length} submissions without cert (Stranger in Mirror)`)
+
+    // Different contest with all placements
+    const packageSubmissions = await Submission.find({ title: { $regex: 'The Package' } }).sort({ totalScore: -1 })
+    const packageCerts = ['/certs/test_contest_1st_Test_Winner_test1.png', '/certs/test_contest_2nd_Second_Place_test2.png', '/certs/test_contest_3rd_Third_Place_test3.png']
+    for (let i = 0; i < packageSubmissions.length; i++) {
+      await Submission.findByIdAndUpdate(packageSubmissions[i]._id, {
+        $set: {
+          placement: i + 1,
+          certificateUrl: packageCerts[i],
+          certificateGeneratedAt: new Date('2026-04-28'),
+        },
+      })
+    }
+    console.log(`Seeded: ${packageSubmissions.length} submissions with certs (The Package)`)
 
     // Don't close connection - let server use it
     console.log('\nDatabase seeded successfully!');
