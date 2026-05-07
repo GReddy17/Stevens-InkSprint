@@ -90,7 +90,6 @@ export const typeDefs = `#graphql
     rules: String
     startTime: String!
     endTime: String!
-    createdBy: ID!
     votingType: VotingType
     votingGroupMemberIds: [ID!]
     votingDurationHours: Int
@@ -119,22 +118,21 @@ export const typeDefs = `#graphql
 
   input CreateSubmissionInput {
     contestId: ID!
-    authorId: ID!
     content: String!
     title: String
     description: String
   }
 
-  input CreateVoteInput {
+  input CastVoteInput {
     contestId: ID!
     submissionId: ID!
-    voterId: ID!
     points: Int!
   }
 
   type Query {
     healthCheck: String!
 
+    me: User
     users: [User!]!
     user(id: ID!): User
 
@@ -160,7 +158,7 @@ export const typeDefs = `#graphql
     createSubmission(input: CreateSubmissionInput!): Submission!
     deleteSubmission(id: ID!): Submission!
 
-    castVote(input: CreateVoteInput!): Vote!
+    castVote(input: CastVoteInput!): Vote!
 
     finalizeContest(id: ID!): FinalizeResult!
   }

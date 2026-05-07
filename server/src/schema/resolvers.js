@@ -50,6 +50,9 @@ export const resolvers = {
     healthCheck: () => 'Ink Sprint GraphQL server is running',
     
     // Users
+    me: async (_, __, context) => {
+      return context.user
+    },
     users: async () => {
       return await User.find({});
     },
@@ -187,21 +190,35 @@ export const resolvers = {
     },
 
     // Create contest
-    createContest: async (_, { input }) => {
-      const { title, prompt, rules, startTime, endTime, createdBy, votingType, votingGroupMemberIds, votingDurationHours, wordMin, wordMax } = input
+    createContest: async (_, { input }, context) => {
+      if (!context.user) throw new Error('You must be logged in to create a contest')
+
+      const {
+        title,
+        prompt,
+        rules,
+        startTime,
+        endTime,
+        votingType,
+        votingGroupMemberIds,
+        votingDurationHours,
+        wordMin,
+        wordMax,
+      } = input
 
       validateString(title, 'title')
       validateString(prompt, 'prompt')
       const { start, end } = validateDates(startTime, endTime)
       validateWordLimits(wordMin, wordMax)
 
-      if (!mongoose.Types.ObjectId.isValid(createdBy)) throw new Error('Invalid createdBy user ID')
-      const creator = await User.findById(createdBy)
-      if (!creator) throw new Error('Creator user not found')
+      const createdBy = context.user.id
 
       const validVotingType = votingType ? validateVotingType(votingType) : 'EVERYONE'
 
-      if (validVotingType === 'JUDGES' && (!votingGroupMemberIds || votingGroupMemberIds.length === 0)) {
+      if (
+        validVotingType === 'JUDGES' &&
+        (!votingGroupMemberIds || votingGroupMemberIds.length === 0)
+      ) {
         throw new Error('JUDGES votingType requires at least one votingGroupMemberId')
       }
 
@@ -252,7 +269,7 @@ export const resolvers = {
         ? validateVotingType(input.votingType)
         : contest.votingType
 
-if (input.votingType) update.votingType = newVotingType
+      if (input.votingType) update.votingType = newVotingType
       if (input.votingDurationHours) update.votingDurationHours = input.votingDurationHours
       if (input.wordMin !== undefined || input.wordMax !== undefined) {
         validateWordLimits(
@@ -304,20 +321,21 @@ if (input.votingType) update.votingType = newVotingType
     },
 
     // Create submission
-    createSubmission: async (_, { input }) => {
-      const { contestId, authorId, content, title, description } = input
+    createSubmission: async (_, { input }, context) => {
+       if (!context.user) {
+        throw new Error('You must be logged in to submit')
+      }
+
+      const { contestId, content, title, description } = input
+      const authorId = context.user.id
 
       if (!mongoose.Types.ObjectId.isValid(contestId)) throw new Error('Invalid contest ID')
-      if (!mongoose.Types.ObjectId.isValid(authorId)) throw new Error('Invalid author ID')
       validateString(content, 'content')
 
       const contest = await Contest.findById(contestId)
       if (!contest) throw new Error('Contest not found')
       const status = getContestStatus(contest)
       if (status !== 'ACTIVE') throw new Error('Contest is not currently active')
-
-      const author = await User.findById(authorId)
-      if (!author) throw new Error('Author user not found')
 
       const existing = await Submission.findOne({ contestId, authorId })
       if (existing) throw new Error('User has already submitted to this contest')
@@ -349,12 +367,16 @@ if (input.votingType) update.votingType = newVotingType
     },
 
     // Cast vote
-    castVote: async (_, { input }) => {
-      const { contestId, submissionId, voterId, points } = input
+    castVote: async (_, { input }, context) => {
+      if (!context.user) {
+        throw new Error('You must be logged in to vote')
+      }
+
+      const { contestId, submissionId, points } = input
+      const voterId = context.user.id
 
       if (!mongoose.Types.ObjectId.isValid(contestId)) throw new Error('Invalid contest ID')
       if (!mongoose.Types.ObjectId.isValid(submissionId)) throw new Error('Invalid submission ID')
-      if (!mongoose.Types.ObjectId.isValid(voterId)) throw new Error('Invalid voter ID')
       validatePoints(points)
 
       const contest = await Contest.findById(contestId)

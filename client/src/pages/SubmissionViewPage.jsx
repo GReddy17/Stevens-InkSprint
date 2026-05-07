@@ -1,5 +1,6 @@
+import { useState } from 'react'
 import { formatDate } from '../utils/contestHelpers'
-import { gql, useQuery } from '@apollo/client'
+import { gql, useQuery, useMutation } from '@apollo/client'
 import { useParams, Link } from 'react-router-dom'
 
 const GET_SUBMISSION = gql`
@@ -23,6 +24,22 @@ const GET_SUBMISSION = gql`
 			contest {
 				id
 				title
+				status
+				votingType
+			}
+		}
+	}
+`
+
+const CAST_VOTE = gql`
+	mutation CastVote($input: CastVoteInput!) {
+		castVote(input: $input) {
+			id
+			points
+			submission {
+				id
+				voteCount
+				totalScore
 			}
 		}
 	}
@@ -30,11 +47,45 @@ const GET_SUBMISSION = gql`
 
 function SubmissionViewPage() {
 	const { submissionId } = useParams()
+	const [points, setPoints] = useState(10)
+	const [voteMessage, setVoteMessage] = useState('')
 
 	const { loading, error, data } = useQuery(GET_SUBMISSION, {
 		variables: { submissionId },
 		skip: !submissionId,
 	})
+	const [castVote, { loading: voteLoading }] = useMutation(CAST_VOTE)
+
+	const handleVote = async () => {
+		setVoteMessage('')
+
+		if (!data?.submission) {
+			setVoteMessage('Submission data is not available.')
+			return
+		}
+
+		try {
+			await castVote({
+				variables: {
+					input: {
+						contestId: data.submission.contest.id,
+						submissionId: data.submission.id,
+						points,
+					},
+				},
+				refetchQueries: [
+					{
+						query: GET_SUBMISSION,
+						variables: { submissionId },
+					},
+				],
+			})
+
+			setVoteMessage('Vote submitted successfully.')
+		} catch (error) {
+			setVoteMessage(error.message || 'Failed to submit vote.')
+		}
+	}
 
 	if (loading) {
 		return (
@@ -114,6 +165,40 @@ function SubmissionViewPage() {
 						{submission.content}
 					</p>
 				</div>
+				{submission.contest?.status === 'VOTING' && (
+					<div className="bg-gray-800 border border-gray-700 rounded-xl p-6">
+						<h2 className="text-xl font-semibold mb-4">Cast Your Vote</h2>
+
+						<select
+							value={points}
+							onChange={(event) => setPoints(Number(event.target.value))}
+							className="rounded-lg bg-gray-900 border border-gray-700 px-4 py-3 text-white">
+							{[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((num) => (
+								<option key={num} value={num}>
+									{num}
+								</option>
+							))}
+						</select>
+
+						<button
+							type="button"
+							onClick={handleVote}
+							disabled={voteLoading}
+							className="ml-3 bg-white text-gray-900 font-medium px-5 py-2.5 rounded-lg hover:bg-gray-200 disabled:opacity-50">
+							{voteLoading ? 'Submitting...' : 'Submit Vote'}
+						</button>
+						{voteMessage && (
+							<p
+								className={`text-sm mt-4 ${
+									voteMessage.toLowerCase().includes('success')
+										? 'text-green-400'
+										: 'text-red-400'
+								}`}>
+								{voteMessage}
+							</p>
+						)}
+					</div>
+				)}
 
 				{submission.certificateUrl && (
 					<div className="bg-gray-800 border border-gray-700 rounded-xl p-6">
