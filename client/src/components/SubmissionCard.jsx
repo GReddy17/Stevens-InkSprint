@@ -21,13 +21,24 @@ const SubmissionCard = ({ submission }) => {
 					{submission.title || 'Untitled Submission'}
 				</h3>
 				{submission.placement && (
-					<span className={`text-xs px-2 py-1 rounded shrink-0 ${
-						submission.placement === 1 ? 'bg-yellow-600' :
-						submission.placement === 2 ? 'bg-gray-400 text-gray-900' :
-						submission.placement === 3 ? 'bg-amber-700' :
-						'bg-gray-600'
-					}`}>
-						{submission.placement}{submission.placement === 1 ? 'st' : submission.placement === 2 ? 'nd' : submission.placement === 3 ? 'rd' : 'th'}
+					<span
+						className={`text-xs px-2 py-1 rounded shrink-0 ${
+							submission.placement === 1
+								? 'bg-yellow-600'
+								: submission.placement === 2
+									? 'bg-gray-400 text-gray-900'
+									: submission.placement === 3
+										? 'bg-amber-700'
+										: 'bg-gray-600'
+						}`}>
+						{submission.placement}
+						{submission.placement === 1
+							? 'st'
+							: submission.placement === 2
+								? 'nd'
+								: submission.placement === 3
+									? 'rd'
+									: 'th'}
 					</span>
 				)}
 			</div>
@@ -40,7 +51,10 @@ const SubmissionCard = ({ submission }) => {
 
 			<div className="mt-4 flex gap-4 text-sm text-gray-400">
 				<span>Votes: {submission.voteCount}</span>
-				<span>Score: {submission.totalScore}</span>
+				<span>Total Score: {submission.averageTotalScore}</span>
+				<span>Style Score: {submission.averageStyleScore}</span>
+				<span>Creativity Score: {submission.averageCreativityScore}</span>
+				<span>Storytelling Score: {submission.averageStorytellingScore}</span>
 				{submission.certificateUrl && (
 					<span className="text-green-400">📜 cert</span>
 				)}
