@@ -15,6 +15,7 @@ import {
   validateWordLimits,
 } from '../utils/validation.js'
 import { getContestStatus } from '../utils/helpers.js'
+import { generateCertificate } from '../utils/certificateGenerator.js'
 
 // Cache helpers
 const cacheGet = async (key) => {
@@ -417,7 +418,17 @@ if (input.votingType) update.votingType = newVotingType
       const updated = await Promise.all(
         submissions.map(async (sub, index) => {
           const placement = index + 1
-          const certificateUrl = `/certs/${contest.title.replace(/\s+/g, '_').toLowerCase()}_${placement}_${sub._id}.pdf`
+          const author = await User.findById(sub.authorId)
+          const authorName = author?.displayName || author?.email || 'Participant'
+
+          const certificateUrl = await generateCertificate({
+            contestTitle: contest.title,
+            participantName: authorName,
+            placement,
+            date: new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }),
+            submissionId: sub._id.toString()
+          })
+
           return Submission.findByIdAndUpdate(
             sub._id,
             {

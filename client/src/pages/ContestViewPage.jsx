@@ -26,6 +26,8 @@ const GET_CONTEST = gql`
         content
         voteCount
         totalScore
+        placement
+        certificateUrl
         author {
           id
           displayName
