@@ -16,6 +16,9 @@ const GET_SUBMISSIONS_BY_CONTEST = gql`
 		submissionsByContest(contestId: $contestId) {
 			id
 			title
+			placement
+			certificateUrl
+			totalScore
 		}
 	}
 `
@@ -54,12 +57,25 @@ function ContestSection({ contest }) {
 
 			{!loading &&
 				data?.submissionsByContest?.map((submission) => (
-					<div key={submission.id} className="mb-1">
+					<div key={submission.id} className="mb-1 flex items-center gap-3">
+						{submission.placement && (
+							<span className={`text-xs px-2 py-0.5 rounded ${
+								submission.placement === 1 ? 'bg-yellow-600' :
+								submission.placement === 2 ? 'bg-gray-400' :
+								submission.placement === 3 ? 'bg-amber-700' :
+								'bg-gray-600'
+							}`}>
+								{submission.placement}{submission.placement === 1 ? 'st' : submission.placement === 2 ? 'nd' : submission.placement === 3 ? 'rd' : 'th'}
+							</span>
+						)}
 						<Link
 							to={`/submissions/${submission.id}`}
 							className="text-blue-400 hover:underline">
 							{submission.title || 'Untitled Submission'}
 						</Link>
+						{submission.certificateUrl && (
+							<span className="text-green-400 text-xs">📜 cert</span>
+						)}
 					</div>
 				))}
 		</div>
@@ -71,6 +87,8 @@ function DevPage() {
 		fetchPolicy: 'cache-and-network',
 	})
 
+	const contestSections = data?.contests || []
+
 	return (
 		<div className="min-h-screen bg-gray-900 text-white px-6 py-10">
 			<div className="max-w-4xl mx-auto">
@@ -79,6 +97,13 @@ function DevPage() {
 				<p className="text-gray-400 mb-8">
 					Temporary page for navigating contests, submissions, and forms.
 				</p>
+
+				<div className="bg-gray-800 border border-gray-700 rounded-xl p-4 mb-6">
+					<h2 className="text-lg font-semibold mb-2">Certificate Test Summary</h2>
+					<p className="text-sm text-gray-400">
+						Echoes: 1st, 2nd, 3rd with certs • Stranger in Mirror: no certs • The Package: all with certs
+					</p>
+				</div>
 
 				{loading && <p className="text-gray-400">Loading contests...</p>}
 
