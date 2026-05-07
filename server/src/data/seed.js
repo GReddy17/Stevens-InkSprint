@@ -140,6 +140,27 @@ const seed = async () => {
       },
     ]
 
+    const scoreSets = [
+      { styleScore: 5, creativityScore: 2, storytellingScore: 4 },
+      { styleScore: 2, creativityScore: 5, storytellingScore: 5 },
+      { styleScore: 4, creativityScore: 3, storytellingScore: 2 },
+      { styleScore: 3, creativityScore: 4, storytellingScore: 5 },
+    ]
+
+    const buildVote = ({ contestId, submissionId, voterId, scores }) => {
+      const totalScore =
+        scores.styleScore + scores.creativityScore + scores.storytellingScore
+
+      return {
+        contestId,
+        submissionId,
+        voterId,
+        ...scores,
+        totalScore,
+        votedAt: new Date(),
+      }
+    }
+
     let totalSubmissions = 0
     let totalVotes = 0
 
@@ -162,6 +183,13 @@ const seed = async () => {
         wordMax: template.wordMax,
       })
 
+      const status = getContestStatus(contest)
+
+      if (status === 'UPCOMING') {
+        console.log(`${contest.title}: ${status}, no submissions or votes seeded`)
+        continue
+      }
+
       const submissions = await Submission.create([
         {
           contestId: contest._id,
@@ -170,6 +198,11 @@ const seed = async () => {
           description: 'First submission for testing',
           content:
             'This is a sample story content for testing. A short tale of creativity.',
+          voteCount: 0,
+          styleScore: 0,
+          creativityScore: 0,
+          storytellingScore: 0,
+          totalScore: 0,
         },
         {
           contestId: contest._id,
@@ -178,6 +211,11 @@ const seed = async () => {
           description: 'Second submission for testing',
           content:
             'Another sample story for testing. Words flow like rivers in the night.',
+          voteCount: 0,
+          styleScore: 0,
+          creativityScore: 0,
+          storytellingScore: 0,
+          totalScore: 0,
         },
         {
           contestId: contest._id,
@@ -186,15 +224,18 @@ const seed = async () => {
           description: 'Third submission for testing',
           content:
             'A final sample story waits quietly, ready for another vote.',
+          voteCount: 0,
+          styleScore: 0,
+          creativityScore: 0,
+          storytellingScore: 0,
+          totalScore: 0,
         },
       ])
 
       totalSubmissions += submissions.length
 
-      const status = getContestStatus(contest)
-
-      if (status === 'ACTIVE' || status === 'UPCOMING') {
-        console.log(`${contest.title}: ${status}, no votes seeded`)
+      if (status === 'ACTIVE') {
+        console.log(`${contest.title}: ${status}, submissions seeded, no votes seeded`)
         continue
       }
 
@@ -203,71 +244,64 @@ const seed = async () => {
       if (contest.votingType === 'JUDGES') {
         if (status === 'VOTING') {
           votesToCreate = [
-            {
+            buildVote({
               contestId: contest._id,
               submissionId: submissions[0]._id,
               voterId: judgeUsers[0],
-              points: 8,
-              votedAt: new Date(),
-            },
+              scores: scoreSets[0],
+            }),
           ]
         }
 
         if (status === 'COMPLETED') {
           votesToCreate = [
-            {
+            buildVote({
               contestId: contest._id,
               submissionId: submissions[0]._id,
               voterId: judgeUsers[0],
-              points: 8,
-              votedAt: new Date(),
-            },
-            {
+              scores: scoreSets[0],
+            }),
+            buildVote({
               contestId: contest._id,
               submissionId: submissions[1]._id,
               voterId: judgeUsers[1],
-              points: 7,
-              votedAt: new Date(),
-            },
+              scores: scoreSets[1],
+            }),
           ]
         }
       }
 
       if (contest.votingType === 'CREATOR') {
         votesToCreate = [
-          {
+          buildVote({
             contestId: contest._id,
             submissionId: submissions[0]._id,
             voterId: creator._id,
-            points: 9,
-            votedAt: new Date(),
-          },
-          {
+            scores: scoreSets[2],
+          }),
+          buildVote({
             contestId: contest._id,
             submissionId: submissions[1]._id,
             voterId: creator._id,
-            points: 6,
-            votedAt: new Date(),
-          },
+            scores: scoreSets[3],
+          }),
         ]
       }
 
       if (contest.votingType === 'EVERYONE') {
         votesToCreate = [
-          {
+          buildVote({
             contestId: contest._id,
             submissionId: submissions[0]._id,
             voterId: users[3]._id,
-            points: 8,
-            votedAt: new Date(),
-          },
-          {
+            scores: scoreSets[0],
+          }),
+          buildVote({
             contestId: contest._id,
             submissionId: submissions[1]._id,
             voterId: users[4]._id,
-            points: 7,
-            votedAt: new Date(),
-          },
+            scores: scoreSets[1],
+          }),
         ]
       }
 
@@ -279,7 +313,10 @@ const seed = async () => {
           await Submission.findByIdAndUpdate(vote.submissionId, {
             $inc: {
               voteCount: 1,
-              totalScore: vote.points,
+              styleScore: vote.styleScore,
+              creativityScore: vote.creativityScore,
+              storytellingScore: vote.storytellingScore,
+              totalScore: vote.totalScore,
             },
           })
         }

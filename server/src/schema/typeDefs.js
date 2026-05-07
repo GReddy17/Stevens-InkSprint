@@ -52,6 +52,13 @@ export const typeDefs = `#graphql
     description: String
     submittedAt: String!
     voteCount: Int!
+    styleScore: Int!
+    creativityScore: Int!
+    storytellingScore: Int!
+    averageStyleScore: Float!
+    averageCreativityScore: Float!
+    averageStorytellingScore: Float!
+    averageTotalScore: Float!
     totalScore: Int!
     placement: Int
     certificateUrl: String
@@ -66,22 +73,16 @@ export const typeDefs = `#graphql
     contest: Contest!
     submission: Submission!
     voter: User!
-    points: Int!
+    styleScore: Int!
+    creativityScore: Int!
+    storytellingScore: Int!
+    totalScore: Int!
     votedAt: String!
   }
 
   type FinalizeResult {
     contest: Contest!
     submissions: [Submission!]!
-  }
-
-  type Vote {
-    id: ID!
-    contest: Contest!
-    submission: Submission!
-    voter: User!
-    points: Int!
-    votedAt: String!
   }
 
   input CreateContestInput {
@@ -126,7 +127,9 @@ export const typeDefs = `#graphql
   input CastVoteInput {
     contestId: ID!
     submissionId: ID!
-    points: Int!
+    styleScore: Int!
+    creativityScore: Int!
+    storytellingScore: Int!
   }
 
   type Query {
