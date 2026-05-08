@@ -2,6 +2,7 @@ import { gql, useQuery } from '@apollo/client'
 import { formatDate } from '../utils/contestHelpers'
 import { useParams, Link } from 'react-router-dom'
 import SubmissionCard from '../components/SubmissionCard'
+import { useState } from 'react'
 
 const GET_CONTEST = gql`
 	query GetContest($contestId: ID!) {
@@ -23,22 +24,27 @@ const GET_CONTEST = gql`
 				id
 				title
 				description
-        content
-        voteCount
-        totalScore
-        placement
-        certificateUrl
-        author {
-          id
-          displayName
-        }
-      }
-    }
-  }
+				content
+				voteCount
+				averageTotalScore
+				averageStyleScore
+				averageCreativityScore
+				averageStorytellingScore
+				submittedAt
+				placement
+				certificateUrl
+				author {
+					id
+					displayName
+				}
+			}
+		}
+	}
 `
 
 function ContestViewPage() {
 	const { contestId } = useParams()
+	const [sortBy, setSortBy] = useState('totalScore')
 
 	const { loading, error, data } = useQuery(GET_CONTEST, {
 		variables: { contestId },
@@ -46,6 +52,14 @@ function ContestViewPage() {
 	})
 
 	const contest = data?.contest
+
+	const sortedSubmissions = [...(contest?.submissions || [])].sort((a, b) => {
+		if (sortBy === 'submittedAt') {
+			return new Date(b.submittedAt) - new Date(a.submittedAt)
+		}
+
+		return (b[sortBy] ?? 0) - (a[sortBy] ?? 0)
+	})
 
 	if (loading) {
 		return (
@@ -143,13 +157,28 @@ function ContestViewPage() {
 						</Link>
 					)}
 
-					<h2 className="text-2xl font-semibold">Submissions</h2>
+					<div className="flex justify-between items-center">
+						<h2 className="text-2xl font-semibold">Submissions</h2>
+							<div>
+								<span className="mr-4">Sort By:</span>
+								<select
+									value={sortBy}
+									onChange={(e) => setSortBy(e.target.value)}
+									className="bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-gray-600">
+									<option value="submittedAt">Submission Date</option>
+									<option value="averageTotalScore">Total Score</option>
+									<option value="averageStyleScore">Style</option>
+									<option value="averageCreativityScore">Creativity</option>
+									<option value="averageStorytellingScore">Storytelling</option>
+								</select>
+							</div>
+					</div>
 
 					{contest.submissionCount === 0 ? (
 						<p className="text-gray-400">No submissions yet.</p>
 					) : (
 						<div className="grid gap-4">
-							{contest.submissions.map((submission) => (
+							{sortedSubmissions.map((submission) => (
 								<SubmissionCard key={submission.id} submission={submission} />
 							))}
 						</div>
