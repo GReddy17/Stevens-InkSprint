@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { formatDate } from '../utils/contestHelpers'
 import { gql, useQuery, useMutation } from '@apollo/client'
-import { useParams, Link } from 'react-router-dom'
+import { useParams, Link, useNavigate } from 'react-router-dom'
 
 const GET_SUBMISSION = gql`
 	query GetSubmission($submissionId: ID!) {
@@ -17,7 +17,14 @@ const GET_SUBMISSION = gql`
 				email
 			}
 			voteCount
+			styleScore
+			creativityScore
+			storytellingScore
 			totalScore
+			averageTotalScore
+			averageStyleScore
+			averageCreativityScore
+			averageStorytellingScore
 			placement
 			certificateUrl
 			certificateGeneratedAt
@@ -35,10 +42,16 @@ const CAST_VOTE = gql`
 	mutation CastVote($input: CastVoteInput!) {
 		castVote(input: $input) {
 			id
-			points
+			styleScore
+			creativityScore
+			storytellingScore
+			totalScore
 			submission {
 				id
 				voteCount
+				styleScore
+				creativityScore
+				storytellingScore
 				totalScore
 			}
 		}
@@ -46,8 +59,11 @@ const CAST_VOTE = gql`
 `
 
 function SubmissionViewPage() {
+	const navigate = useNavigate()
 	const { submissionId } = useParams()
-	const [points, setPoints] = useState(10)
+	const [styleScore, setStyleScore] = useState(5)
+	const [creativityScore, setCreativityScore] = useState(5)
+	const [storytellingScore, setStorytellingScore] = useState(5)
 	const [voteMessage, setVoteMessage] = useState('')
 
 	const { loading, error, data } = useQuery(GET_SUBMISSION, {
@@ -70,7 +86,9 @@ function SubmissionViewPage() {
 					input: {
 						contestId: data.submission.contest.id,
 						submissionId: data.submission.id,
-						points,
+						styleScore,
+						creativityScore,
+						storytellingScore,
 					},
 				},
 				refetchQueries: [
@@ -79,6 +97,7 @@ function SubmissionViewPage() {
 						variables: { submissionId },
 					},
 				],
+				awaitRefetchQueries: true,
 			})
 
 			setVoteMessage('Vote submitted successfully.')
@@ -153,7 +172,7 @@ function SubmissionViewPage() {
 						)}
 
 						<span className="bg-gray-700 rounded-full px-3 py-1">
-							Total Score: {submission.totalScore}
+							Total Score: {(styleScore + creativityScore + storytellingScore) / 3} / 15
 						</span>
 
 						<span className="bg-gray-700 rounded-full px-3 py-1">
@@ -169,33 +188,53 @@ function SubmissionViewPage() {
 					<div className="bg-gray-800 border border-gray-700 rounded-xl p-6">
 						<h2 className="text-xl font-semibold mb-4">Cast Your Vote</h2>
 
-						<select
-							value={points}
-							onChange={(event) => setPoints(Number(event.target.value))}
-							className="rounded-lg bg-gray-900 border border-gray-700 px-4 py-3 text-white">
-							{[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((num) => (
-								<option key={num} value={num}>
-									{num}
-								</option>
+						<div className='flex flex-col sm:flex-row gap-4'>
+							{[
+								['Style', styleScore, setStyleScore],
+								['Creativity', creativityScore, setCreativityScore],
+								['Storytelling', storytellingScore, setStorytellingScore],
+							].map(([label, value, setter]) => (
+								<div key={label} className='sm:w-1/3'>
+									<label className="block mb-2 text-sm text-gray-300">
+										{label}
+									</label>
+									<select
+										value={value}
+										onChange={(event) => setter(Number(event.target.value))}
+										className="w-full rounded-lg bg-gray-900 border border-gray-700 px-4 py-3 text-white">
+										{[1, 2, 3, 4, 5].map((num) => (
+											<option key={num} value={num}>
+												{num}
+											</option>
+										))}
+									</select>
+								</div>
 							))}
-						</select>
+						</div>
 
 						<button
 							type="button"
 							onClick={handleVote}
 							disabled={voteLoading}
-							className="ml-3 bg-white text-gray-900 font-medium px-5 py-2.5 rounded-lg hover:bg-gray-200 disabled:opacity-50">
+							className="ml-2 mt-5 bg-white text-gray-900 font-medium px-5 py-2.5 rounded-lg hover:bg-gray-200 disabled:opacity-50">
 							{voteLoading ? 'Submitting...' : 'Submit Vote'}
 						</button>
 						{voteMessage && (
-							<p
-								className={`text-sm mt-4 ${
-									voteMessage.toLowerCase().includes('success')
-										? 'text-green-400'
-										: 'text-red-400'
-								}`}>
-								{voteMessage}
-							</p>
+							<div>
+								<p
+									className={`text-sm mt-4 ${
+										voteMessage.toLowerCase().includes('vote submitted')
+											? 'text-green-400'
+											: 'text-red-400'
+									}`}>
+									{voteMessage}
+								</p>
+									{voteMessage !== '' && 
+									<p className='my-2'>
+										<Link to={`/contests/${data.submission.contest.id}`} className='underline underline-offset-3'>&larr; Back to contest</Link>
+									</p>
+									}
+							</div>
 						)}
 					</div>
 				)}
@@ -204,10 +243,11 @@ function SubmissionViewPage() {
 					<div className="bg-gray-800 border border-gray-700 rounded-xl p-6">
 						<h2 className="text-xl font-semibold mb-2">Certificate</h2>
 						<p className="text-gray-400 text-sm mb-4">
-							{submission.placement === 1 && "🏆 Congratulations on your win!"}
-							{submission.placement === 2 && "🥈 Great job on second place!"}
-							{submission.placement === 3 && "🥉 Nice work on third place!"}
-							{submission.placement > 3 && `You placed ${submission.placement}th`}
+							{submission.placement === 1 && '🏆 Congratulations on your win!'}
+							{submission.placement === 2 && '🥈 Great job on second place!'}
+							{submission.placement === 3 && '🥉 Nice work on third place!'}
+							{submission.placement > 3 &&
+								`You placed ${submission.placement}th`}
 						</p>
 						<a
 							href={`http://localhost:4000${submission.certificateUrl}`}

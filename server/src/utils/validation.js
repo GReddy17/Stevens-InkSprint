@@ -40,11 +40,10 @@ export function validateDates(startTime, endTime) {
   return { start, end }
 }
 
-export function validatePoints(points) {
-  if (!Number.isInteger(points) || points < 1 || points > 10) {
-    throw new Error('Points must be an integer between 1 and 10')
+export function validateCategoryScore(score, fieldName) {
+  if (!Number.isInteger(score) || score < 1 || score > 5) {
+    throw new Error(`${fieldName} must be an integer between 1 and 5`)
   }
-  return points
 }
 
 export function validateWordLimits(wordMin, wordMax) {
