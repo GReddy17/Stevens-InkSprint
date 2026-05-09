@@ -74,8 +74,8 @@ const seed = async () => {
 		await Submission.deleteMany({})
 		await Vote.deleteMany({})
 		console.log('Cleared existing data')
-		// clearGeneratedCertificates()
-		// console.log('Cleared generated certificates')
+		clearGeneratedCertificates()
+		console.log('Cleared generated certificates')
 
 		const users = await User.create([
 			{ firebaseUid: 'u1', email: 'alex@school.edu', displayName: 'Alex Chen' },
@@ -177,14 +177,6 @@ const seed = async () => {
 				phase: 'COMPLETED',
 				wordMin: 100,
 				wordMax: 1000,
-			},
-			{
-				title: 'Stranger in Mirror',
-				prompt: 'Your reflection changes.',
-				votingType: 'EVERYONE',
-				phase: 'COMPLETED',
-				wordMin: 200,
-				wordMax: 1200,
 			},
 			{
 				title: 'The Package',
@@ -421,14 +413,6 @@ const seed = async () => {
 		}
 
 		console.log(`Seeded: ${echoSubmissions.length} Echoes certificates`)
-
-		const mirrorSubmissions = await Submission.find({
-			title: { $regex: 'Stranger in Mirror' },
-		})
-
-		console.log(
-			`Seeded: ${mirrorSubmissions.length} submissions without cert (Stranger in Mirror)`,
-		)
 
 		const packageSubmissions = await Submission.find({
 			title: { $regex: 'The Package' },
