@@ -15,7 +15,7 @@ RUN npm install
 
 # Copy all source code to container
 COPY src ./src
-COPY public ./public
+RUN mkdir -p public/certs
 
 # Tell Docker that app listens on port 4000
 EXPOSE 4000
