@@ -39,7 +39,9 @@ export async function generateCertificate({
   const cmd = `magick -size 800x600 xc:white ${fontArg} -fill "#1e3a5f" -pointsize 24 -gravity center -annotate +0-240 "InkSprint Writing Contest" -fill "#1e3a5f" -pointsize 48 -annotate +0-160 "Certificate of Achievement" -fill "#333333" -pointsize 32 -annotate +0-80 "This certifies that" -fill "#d4af37" -pointsize 42 -annotate +0-20 "${participantName}" -fill "#333333" -pointsize 28 -annotate +0+40 "has won ${placementText}" -annotate +0+80 "in ${contestTitle}" -fill "#666666" -pointsize 20 -annotate +0+160 "Date: ${date}" "${outputPath}"`
 
   try {
-    await execAsync(cmd, { shell: '/bin/sh' })
+    const execOptions = process.platform === 'win32' ? {} : { shell: '/bin/sh' }
+    await execAsync(cmd, execOptions)
+
     return `/certs/${filename}`
   } catch (error) {
     console.error('Certificate generation failed:', error.message)

@@ -22,18 +22,58 @@ The system aims to create an organized and accessible environment for running wr
 
 ---
 
-## Running the project
+# Running the Project
+
+## Recommended Setup: Docker
+
+Use Docker for the most consistent setup. This includes MongoDB, Redis, and ImageMagick for certificate generation.
+
+Build and start the containers:
+
+`docker-compose up -d --build`
+
+Seed the Docker MongoDB database:
+
+`docker-compose exec server npm run seed`
+
+Open the app:
+
+Frontend: http://localhost:5173  
+GraphQL: http://localhost:4000
+
+View Docker logs:
+
+`docker-compose logs -f`
+
+To reset stale Docker data and reseed from scratch:
+
+`docker-compose down -v`
+
+`docker-compose up -d --build`
+
+`docker-compose exec server npm run seed`
+
+## Local Development Setup
+
+Use this for faster frontend/backend development. Requires MongoDB and ImageMagick installed locally.
 
 Install dependencies:
 
 `npm install`
 
+Seed the local MongoDB database:
+
+`npm run seed`
+
 Start the app:
 
 `npm run dev`
 
+Open the app:
+
 Frontend: http://localhost:5173  
 GraphQL: http://localhost:4000
+
 
 ## Core Technical Requirements
 
