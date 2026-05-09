@@ -14,7 +14,7 @@ import {
 	validateWordLimits,
 	validateCategoryScore,
 } from '../utils/validation.js'
-import { getContestStatus } from '../utils/helpers.js'
+import { getContestStatus, finalizeContestIfNeeded } from '../utils/helpers.js'
 import { generateCertificate } from '../utils/certificateGenerator.js'
 
 // Cache helpers
@@ -73,8 +73,12 @@ export const resolvers = {
 		contest: async (_, { id }) => {
 			if (!mongoose.Types.ObjectId.isValid(id))
 				throw new Error('Invalid contest ID')
+
 			const contest = await Contest.findById(id)
 			if (!contest) throw new Error('Contest not found')
+
+			await finalizeContestIfNeeded(contest)
+
 			return contest
 		},
 
@@ -95,9 +99,16 @@ export const resolvers = {
 		submission: async (_, { id }) => {
 			if (!mongoose.Types.ObjectId.isValid(id))
 				throw new Error('Invalid submission ID')
+
 			const submission = await Submission.findById(id)
 			if (!submission) throw new Error('Submission not found')
-			return submission
+
+			const contest = await Contest.findById(submission.contestId)
+			if (contest) {
+				await finalizeContestIfNeeded(contest)
+			}
+
+			return await Submission.findById(id)
 		},
 
 		submissionsByContest: async (_, { contestId }) => {
@@ -275,11 +286,20 @@ export const resolvers = {
 		},
 
 		// Update contest fields
-		updateContest: async (_, { id, input }) => {
-			if (!mongoose.Types.ObjectId.isValid(id))
+		updateContest: async (_, { id, input }, context) => {
+			if (!context.user) {
+				throw new Error('You must be logged in to update a contest')
+			}
+			if (!mongoose.Types.ObjectId.isValid(id)) {
 				throw new Error('Invalid contest ID')
+			}
+
 			const contest = await Contest.findById(id)
 			if (!contest) throw new Error('Contest not found')
+
+			if (contest.createdBy.toString() !== context.user.id.toString()) {
+				throw new Error('Only the contest creator can update this contest')
+			}
 
 			const update = {}
 			if (input.title) update.title = validateString(input.title, 'title')
@@ -349,11 +369,21 @@ export const resolvers = {
 		},
 
 		// Delete contest
-		deleteContest: async (_, { id }) => {
-			if (!mongoose.Types.ObjectId.isValid(id))
+		deleteContest: async (_, { id }, context) => {
+			if (!context.user) {
+				throw new Error('You must be logged in to delete a contest')
+			}
+
+			if (!mongoose.Types.ObjectId.isValid(id)) {
 				throw new Error('Invalid contest ID')
+			}
+
 			const contest = await Contest.findById(id)
 			if (!contest) throw new Error('Contest not found')
+
+			if (contest.createdBy.toString() !== context.user.id.toString()) {
+				throw new Error('Only the contest creator can delete this contest')
+			}
 
 			const submissions = await Submission.find({ contestId: id })
 			const submissionIds = submissions.map((s) => s._id)
@@ -383,6 +413,17 @@ export const resolvers = {
 			if (status !== 'ACTIVE')
 				throw new Error('Contest is not currently active')
 
+			const wordCount =
+				content.trim() === '' ? 0 : content.trim().split(/\s+/).length
+
+			if (contest.wordMin != null && wordCount < contest.wordMin) {
+				throw new Error(`Submission must be at least ${contest.wordMin} words`)
+			}
+
+			if (contest.wordMax != null && wordCount > contest.wordMax) {
+				throw new Error(`Submission cannot exceed ${contest.wordMax} words`)
+			}
+
 			const existing = await Submission.findOne({ contestId, authorId })
 			if (existing)
 				throw new Error('User has already submitted to this contest')
@@ -402,11 +443,27 @@ export const resolvers = {
 		},
 
 		// Delete submission
-		deleteSubmission: async (_, { id }) => {
-			if (!mongoose.Types.ObjectId.isValid(id))
+		deleteSubmission: async (_, { id }, context) => {
+			if (!context.user) {
+				throw new Error('You must be logged in to delete a submission')
+			}
+			if (!mongoose.Types.ObjectId.isValid(id)) {
 				throw new Error('Invalid submission ID')
+			}
 			const submission = await Submission.findById(id)
 			if (!submission) throw new Error('Submission not found')
+
+			const contest = await Contest.findById(submission.contestId)
+			if (!contest) throw new Error('Contest not found')
+
+			const isAuthor =
+				submission.authorId.toString() === context.user.id.toString()
+			const isContestCreator =
+				contest.createdBy.toString() === context.user.id.toString()
+
+			if (!isAuthor && !isContestCreator) {
+				throw new Error('You are not authorized to delete this submission')
+			}
 
 			await Vote.deleteMany({ submissionId: id })
 			await Submission.findByIdAndDelete(id)
@@ -500,11 +557,21 @@ export const resolvers = {
 		},
 
 		// Finalize contest - rank submissions and assign placements
-		finalizeContest: async (_, { id }) => {
-			if (!mongoose.Types.ObjectId.isValid(id))
+		finalizeContest: async (_, { id }, context) => {
+			if (!context.user) {
+				throw new Error('You must be logged in to finalize a contest')
+			}
+
+			if (!mongoose.Types.ObjectId.isValid(id)) {
 				throw new Error('Invalid contest ID')
+			}
+
 			const contest = await Contest.findById(id)
 			if (!contest) throw new Error('Contest not found')
+
+			if (contest.createdBy.toString() !== context.user.id.toString()) {
+				throw new Error('Only the contest creator can finalize this contest')
+			}
 
 			const status = getContestStatus(contest)
 
@@ -514,49 +581,9 @@ export const resolvers = {
 				)
 			}
 
-			const submissions = await Submission.find({ contestId: id })
+			const submissions = await finalizeContestIfNeeded(contest)
 
-			submissions.sort((a, b) => {
-				const averageA = a.voteCount ? a.totalScore / a.voteCount : 0
-				const averageB = b.voteCount ? b.totalScore / b.voteCount : 0
-
-				return averageB - averageA
-			})
-
-			const updated = await Promise.all(
-				submissions.map(async (sub, index) => {
-					const placement = index + 1
-					const author = await User.findById(sub.authorId)
-					const authorName =
-						author?.displayName || author?.email || 'Participant'
-
-					const certificateUrl = await generateCertificate({
-						contestTitle: contest.title,
-						participantName: authorName,
-						placement,
-						date: new Date().toLocaleDateString('en-US', {
-							year: 'numeric',
-							month: 'long',
-							day: 'numeric',
-						}),
-						submissionId: sub._id.toString(),
-					})
-
-					return Submission.findByIdAndUpdate(
-						sub._id,
-						{
-							$set: {
-								placement,
-								certificateUrl,
-								certificateGeneratedAt: new Date(),
-							},
-						},
-						{ returnDocument: 'after' },
-					)
-				}),
-			)
-
-			return { contest, submissions: updated }
+			return { contest, submissions }
 		},
 	},
 }
