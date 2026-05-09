@@ -172,7 +172,10 @@ function SubmissionViewPage() {
 						)}
 
 						<span className="bg-gray-700 rounded-full px-3 py-1">
-							Total Score: {(styleScore + creativityScore + storytellingScore) / 3} / 15
+							Total Score:{' '}
+							{submission.voteCount > 0
+								? `${submission.averageTotalScore.toFixed(2)} / 15`
+								: 'No votes yet'}
 						</span>
 
 						<span className="bg-gray-700 rounded-full px-3 py-1">
@@ -188,13 +191,13 @@ function SubmissionViewPage() {
 					<div className="bg-gray-800 border border-gray-700 rounded-xl p-6">
 						<h2 className="text-xl font-semibold mb-4">Cast Your Vote</h2>
 
-						<div className='flex flex-col sm:flex-row gap-4'>
+						<div className="flex flex-col sm:flex-row gap-4">
 							{[
 								['Style', styleScore, setStyleScore],
 								['Creativity', creativityScore, setCreativityScore],
 								['Storytelling', storytellingScore, setStorytellingScore],
 							].map(([label, value, setter]) => (
-								<div key={label} className='sm:w-1/3'>
+								<div key={label} className="sm:w-1/3">
 									<label className="block mb-2 text-sm text-gray-300">
 										{label}
 									</label>
@@ -229,11 +232,15 @@ function SubmissionViewPage() {
 									}`}>
 									{voteMessage}
 								</p>
-									{voteMessage !== '' && 
-									<p className='my-2'>
-										<Link to={`/contests/${data.submission.contest.id}`} className='underline underline-offset-3'>&larr; Back to contest</Link>
+								{voteMessage !== '' && (
+									<p className="my-2">
+										<Link
+											to={`/contests/${data.submission.contest.id}`}
+											className="underline underline-offset-3">
+											&larr; Back to contest
+										</Link>
 									</p>
-									}
+								)}
 							</div>
 						)}
 					</div>
