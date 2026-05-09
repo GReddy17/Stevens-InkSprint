@@ -44,3 +44,9 @@ Thumbs.db
 # ---------------------------
 coverage/
 *.log
+
+# ---------------------------
+# Generated certificates
+# ---------------------------
+server/public/certs/*
+!server/public/certs/.gitkeep
