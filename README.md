@@ -22,7 +22,7 @@ The system aims to create an organized and accessible environment for running wr
 
 ---
 
-ad# Running the Project
+# Running the Project
 
 ## Recommended Setup: Docker
 
