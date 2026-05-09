@@ -15,10 +15,6 @@ import finalhandler from 'finalhandler';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-if (process.env.SEED === 'true') {
-  await import('./data/seed.js');
-}
-
 const port = Number(process.env.PORT) || 4000;
 
 await connectToMongo();
