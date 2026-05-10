@@ -81,11 +81,18 @@ function HomePage() {
 					<div>
 						<h2 className="text-2xl font-semibold">Active Contests</h2>
 					</div>
-					<Link
-						to={`/contests/`}
-						className="block text-center w-42 bg-white text-gray-900 font-medium my-2 py-2 rounded-lg hover:bg-gray-200 transition">
-						Browse All Contests
-					</Link>
+					<div className="flex gap-4">
+						<Link
+							to="/leaderboard/"
+							className="block text-center w-42 bg-yellow-600 text-white font-medium my-2 py-2 rounded-lg hover:bg-yellow-700 transition">
+							🏆 Leaderboard
+						</Link>
+						<Link
+							to={`/contests/`}
+							className="block text-center w-42 bg-white text-gray-900 font-medium my-2 py-2 rounded-lg hover:bg-gray-200 transition">
+							Browse All
+						</Link>
+					</div>
 				</div>
 
 				{loading && <p className="text-gray-400">Loading contests...</p>}

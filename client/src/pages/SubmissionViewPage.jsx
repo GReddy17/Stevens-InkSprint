@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { formatDate } from '../utils/contestHelpers'
 import { gql, useQuery, useMutation } from '@apollo/client'
 import { useParams, Link, useNavigate } from 'react-router-dom'
+import { getAuth, onAuthStateChanged } from 'firebase/auth'
 
 const GET_SUBMISSION = gql`
 	query GetSubmission($submissionId: ID!) {
@@ -13,6 +14,7 @@ const GET_SUBMISSION = gql`
 			submittedAt
 			author {
 				id
+				firebaseUid
 				displayName
 				email
 			}
@@ -65,12 +67,30 @@ function SubmissionViewPage() {
 	const [creativityScore, setCreativityScore] = useState(5)
 	const [storytellingScore, setStorytellingScore] = useState(5)
 	const [voteMessage, setVoteMessage] = useState('')
+	const [currentUserDbId, setCurrentUserDbId] = useState(null)
 
 	const { loading, error, data } = useQuery(GET_SUBMISSION, {
 		variables: { submissionId },
 		skip: !submissionId,
 	})
 	const [castVote, { loading: voteLoading }] = useMutation(CAST_VOTE)
+
+	// Get current user for cert access
+	useEffect(() => {
+		const auth = getAuth()
+		const unsubscribe = onAuthStateChanged(auth, (user) => {
+			if (user) {
+				// Get user's Firebase UID to match with author
+				setCurrentUserDbId(user.uid)
+			} else {
+				setCurrentUserDbId(null)
+			}
+		})
+		return () => unsubscribe()
+	}, [])
+
+	// Check if current user is the author of this submission
+	const isAuthor = data?.submission?.author?.firebaseUid === currentUserDbId
 
 	const handleVote = async () => {
 		setVoteMessage('')
@@ -246,7 +266,7 @@ function SubmissionViewPage() {
 					</div>
 				)}
 
-				{submission.certificateUrl && (
+				{submission.certificateUrl && isAuthor && (
 					<div className="bg-gray-800 border border-gray-700 rounded-xl p-6">
 						<h2 className="text-xl font-semibold mb-2">Certificate</h2>
 						<p className="text-gray-400 text-sm mb-4">
@@ -262,6 +282,15 @@ function SubmissionViewPage() {
 							className="inline-block bg-yellow-600 hover:bg-yellow-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors">
 							Download Certificate
 						</a>
+					</div>
+				)}
+
+				{submission.certificateUrl && !isAuthor && (
+					<div className="bg-gray-800 border border-gray-700 rounded-xl p-6">
+						<h2 className="text-xl font-semibold mb-2">Certificate</h2>
+						<p className="text-gray-400 text-sm">
+							Certificate available to author only
+						</p>
 					</div>
 				)}
 			</div>
