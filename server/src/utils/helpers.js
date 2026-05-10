@@ -1,3 +1,7 @@
+import Contest from '../models/Contest.js'
+import Submission from '../models/Submission.js'
+import User from '../models/User.js'
+
 // Get dynamic contest status based on startTime/endTime
 export function getContestStatus(contest) {
 	const now = new Date()
