@@ -1,15 +1,26 @@
 import { Link } from 'react-router-dom'
 import { useEffect, useRef, useState } from 'react'
 import { onAuthStateChanged, signOut } from 'firebase/auth'
+import { gql, useQuery } from '@apollo/client'
 import { auth } from '../firebase'
 
-// Hardcoded for now.
-const TEMP_CURRENT_USER_ID = '69dd79e6ddb8b4224c65fa1e'
+const GET_ME = gql`
+	query Me {
+		me {
+			id
+			displayName
+		}
+	}
+`
 
 function Header() {
 	const [user, setUser] = useState(null)
 	const [menuOpen, setMenuOpen] = useState(false)
 	const menuRef = useRef(null)
+
+	// Only run the `me` query once Firebase says we're signed in!
+	const { data: meData } = useQuery(GET_ME, { skip: !user })
+	const currentUserId = meData?.me?.id
 
 	useEffect(() => {
 		const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
@@ -74,11 +85,18 @@ function Header() {
 						// arrow opens a dropdown with profile/edit/logout actions.
 						<div className="relative" ref={menuRef}>
 							<div className="flex items-center gap-1">
-								<Link
-									to={`/profiles/${TEMP_CURRENT_USER_ID}`}
-									className="text-gray-200 hover:text-white">
-									{user.displayName || user.email || 'Account'}
-								</Link>
+								{currentUserId ? (
+									<Link
+										to={`/profiles/${currentUserId}`}
+										className="text-gray-200 hover:text-white">
+										{user.displayName || user.email || 'Account'}
+									</Link>
+								) : (
+									// query hasn't resolved yet (or returned null) -- show the name as plain text until we have a real Mongo id.
+									<span className="text-gray-200">
+										{user.displayName || user.email || 'Account'}
+									</span>
+								)}
 								<button
 									type="button"
 									onClick={() => setMenuOpen((open) => !open)}
@@ -104,12 +122,14 @@ function Header() {
 
 							{menuOpen && (
 								<div className="absolute right-0 mt-2 w-44 bg-gray-800 border border-gray-700 rounded-lg shadow-lg overflow-hidden z-10">
-									<Link
-										to={`/profiles/${TEMP_CURRENT_USER_ID}`}
-										onClick={() => setMenuOpen(false)}
-										className="block px-4 py-2 text-gray-200 hover:bg-gray-700">
-										View Profile
-									</Link>
+									{currentUserId && (
+										<Link
+											to={`/profiles/${currentUserId}`}
+											onClick={() => setMenuOpen(false)}
+											className="block px-4 py-2 text-gray-200 hover:bg-gray-700">
+											View Profile
+										</Link>
+									)}
 									<Link
 										to="/profile/edit"
 										onClick={() => setMenuOpen(false)}

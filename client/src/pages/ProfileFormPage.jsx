@@ -1,32 +1,19 @@
-import { useState } from 'react'
-// import { gql, useMutation } from '@apollo/client'
+import { useEffect, useState } from 'react'
+import { gql, useQuery } from '@apollo/client'
+import { onAuthStateChanged } from 'firebase/auth'
+import { auth } from '../firebase'
 
-/* 
-NOTE: there's no auth/login context in the client yet. I'm using
-this stub so the form has something to work with while we build out the UI.
-Once Firebase Auth is wired up (the User model already has firebaseUid),
-this should be replaced with whatever hook/context we end up using to get
-the currently logged-in user. If there's no logged-in user, this page
-should redirect or show "please log in".
-*/
-function useCurrentUserStub() {
-	return {
-		id: '69dd79e6ddb8b4224c65fa1e',
-		displayName: 'Jordan Lee',
-		// NOTE: profilePictureUrl is NOT on the User model in the
-		// backend yet. Please add a `profilePictureUrl` field (String, optional)
-		// to the User schema and expose it on the GraphQL User type.
-		profilePictureUrl: '',
-		// NOTE: socialProfiles is NOT on the User model in the
-		// backend yet. Please add a `socialProfiles` field (array of
-		// { platform: String, url: String }) to the User schema and expose
-		// it on the GraphQL User type.
-		socialProfiles: [],
+const ME_QUERY = gql`
+	query Me {
+		me {
+			id
+			displayName
+		}
 	}
-}
+`
 
-// NOTE: leaving this commented-out for now -- the GraphQL schema only
-// has a `createUser` mutation, not an `updateUser` one. Once teammates add
+// NOTE: leaving this commented-out for now -- the GraphQL schema still only
+// has `createUser`, no `updateUser`. Once teammates add
 // `updateUser(id: ID!, input: UpdateUserInput!): User!` to the schema, swap
 // the console.log in handleSubmit for useMutation(UPDATE_PROFILE).
 //
@@ -44,22 +31,68 @@ function useCurrentUserStub() {
 //   }
 // `
 
-const SOCIAL_PLATFORMS = [
-	'Twitter',
-	'Instagram',
-	'YouTube',
-	'TikTok',
-	'Website',
-	'Other',
-]
+// Social profile feature is commented out for now -- the backend hasn't
+// added a socialProfiles field on the User model yet. Re-enable everything
+// marked "SOCIAL PROFILES (commented out)" once the schema lands.
+// const SOCIAL_PLATFORMS = [
+// 	'Twitter',
+// 	'Instagram',
+// 	'YouTube',
+// 	'TikTok',
+// 	'Website',
+// 	'Other',
+// ]
 
 function ProfileFormPage() {
-	const currentUser = useCurrentUserStub()
+	// Firebase auth state -- mirrors what the Header does.
+	const [firebaseUser, setFirebaseUser] = useState(null)
+	const [authReady, setAuthReady] = useState(false)
 
-	// NOTE: only the logged-in user should be able to edit their own
-	// profile. Once auth is wired up, gate this whole page behind a check that
-	// route :userId === currentUser.id, otherwise redirect / show forbidden.
-	if (!currentUser) {
+	useEffect(() => {
+		const unsubscribe = onAuthStateChanged(auth, (user) => {
+			setFirebaseUser(user)
+			setAuthReady(true)
+		})
+		return () => unsubscribe()
+	}, [])
+
+	// Fetch the real Mongo user record (id + displayName) once Firebase says
+	// we're signed in.
+	const { data: meData, loading: meLoading } = useQuery(ME_QUERY, {
+		skip: !firebaseUser,
+	})
+	const currentUser = meData?.me
+
+	// Form fields.
+	const [displayName, setDisplayName] = useState('')
+	// const [profilePictureUrl, setProfilePictureUrl] = useState('')
+	// const [socialProfiles, setSocialProfiles] = useState([])
+
+	const [submitting, setSubmitting] = useState(false)
+	const [submitMessage, setSubmitMessage] = useState('')
+	const [errorMessage, setErrorMessage] = useState('')
+
+	// Prefill form fields once we have the current user's data.
+	const [initialized, setInitialized] = useState(false)
+	useEffect(() => {
+		if (currentUser && !initialized) {
+			setDisplayName(currentUser.displayName ?? '')
+			setInitialized(true)
+		}
+	}, [currentUser, initialized])
+
+	if (!authReady) {
+		return (
+			<div className="bg-gray-900 text-white px-6 py-10">
+				<div className="max-w-3xl mx-auto">
+					<p className="text-gray-400">Loading...</p>
+				</div>
+			</div>
+		)
+	}
+
+	// Not signed in.
+	if (!firebaseUser) {
 		return (
 			<div className="bg-gray-900 text-white px-6 py-10">
 				<div className="max-w-3xl mx-auto">
@@ -72,49 +105,44 @@ function ProfileFormPage() {
 		)
 	}
 
-	const [displayName, setDisplayName] = useState(
-		currentUser.displayName ?? ''
-	)
-	const [profilePictureUrl, setProfilePictureUrl] = useState(
-		currentUser.profilePictureUrl ?? ''
-	)
-	const [socialProfiles, setSocialProfiles] = useState(
-		currentUser.socialProfiles ?? []
-	)
-
-	const [submitting, setSubmitting] = useState(false)
-	const [submitMessage, setSubmitMessage] = useState('')
-	const [errorMessage, setErrorMessage] = useState('')
-
-	function addSocialProfile() {
-		setSocialProfiles([
-			...socialProfiles,
-			{ platform: SOCIAL_PLATFORMS[0], url: '' },
-		])
-	}
-
-	function updateSocialProfile(index, field, value) {
-		setSocialProfiles(
-			socialProfiles.map((profile, i) =>
-				i === index ? { ...profile, [field]: value } : profile
-			)
+	if (meLoading || !currentUser) {
+		return (
+			<div className="bg-gray-900 text-white px-6 py-10">
+				<div className="max-w-3xl mx-auto">
+					<p className="text-gray-400">Loading profile...</p>
+				</div>
+			</div>
 		)
 	}
 
-	function removeSocialProfile(index) {
-		setSocialProfiles(socialProfiles.filter((_, i) => i !== index))
-	}
+	// function addSocialProfile() {
+	// 	setSocialProfiles([
+	// 		...socialProfiles,
+	// 		{ platform: SOCIAL_PLATFORMS[0], url: '' },
+	// 	])
+	// }
+	//
+	// function updateSocialProfile(index, field, value) {
+	// 	setSocialProfiles(
+	// 		socialProfiles.map((profile, i) =>
+	// 			i === index ? { ...profile, [field]: value } : profile
+	// 		)
+	// 	)
+	// }
+	//
+	// function removeSocialProfile(index) {
+	// 	setSocialProfiles(socialProfiles.filter((_, i) => i !== index))
+	// }
 
 	function validate() {
 		if (!displayName.trim()) {
 			return 'Display name is required.'
 		}
-		// Light URL sanity check on each social profile entry
-		for (const profile of socialProfiles) {
-			if (profile.url && !/^https?:\/\//i.test(profile.url)) {
-				return 'Social profile URLs must start with http:// or https://'
-			}
-		}
+		// for (const profile of socialProfiles) {
+		// 	if (profile.url && !/^https?:\/\//i.test(profile.url)) {
+		// 		return 'Social profile URLs must start with http:// or https://'
+		// 	}
+		// }
 		return ''
 	}
 
@@ -132,20 +160,18 @@ function ProfileFormPage() {
 		const payload = {
 			id: currentUser.id,
 			displayName: displayName.trim(),
-			// NOTE : still sending these even though backend doesn't have them yet, so the wiring is ready when the fields are added.
-			profilePictureUrl: profilePictureUrl.trim(),
-			socialProfiles: socialProfiles
-				.filter((profile) => profile.url.trim() !== '')
-				.map((profile) => ({
-					platform: profile.platform,
-					url: profile.url.trim(),
-				})),
+			// profilePictureUrl: profilePictureUrl.trim(),
+			// socialProfiles: socialProfiles
+			// 	.filter((profile) => profile.url.trim() !== '')
+			// 	.map((profile) => ({
+			// 		platform: profile.platform,
+			// 		url: profile.url.trim(),
+			// 	})),
 		}
 
 		setSubmitting(true)
 		try {
-			// TODO: replace with useMutation(UPDATE_PROFILE) once the
-			// updateUser mutation exists on the backend.
+			// TODO: replace with useMutation(UPDATE_PROFILE) once the updateUser mutation exists on the backend.
 			console.log('Mock profile update payload:', payload)
 			setSubmitMessage('Profile saved locally for now (mock flow).')
 		} catch (err) {
@@ -181,10 +207,8 @@ function ProfileFormPage() {
 						/>
 					</div>
 
-					{/* NOTE: profile picture support is also something I wanted to do
-					    For now this is a URL input. If the backend ever gets
-					    a `profilePictureUrl` field (and probably a file upload
-					    endpoint) we can swap this for a real uploader. */}
+					{/* In case you want to add profile pictures. idk
+
 					<div>
 						<label
 							htmlFor="profilePictureUrl"
@@ -206,8 +230,11 @@ function ProfileFormPage() {
 						/>
 					</div>
 
-					{/* NOTE: Wanted to add social profiles. Forms are nonfunctional
-					    The user can add multiple platform/url pairs here. */}
+					*/}
+					
+					{/* In case we want to add social profiles. Idk if we have time. But I was implementing it before getting sick.
+					- Owen
+
 					<div>
 						<div className="flex items-center justify-between mb-2">
 							<label className="font-medium">
@@ -274,6 +301,7 @@ function ProfileFormPage() {
 							</div>
 						)}
 					</div>
+					*/}
 
 					<div className="flex items-center justify-end gap-3">
 						<button
