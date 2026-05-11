@@ -72,9 +72,19 @@ function SubmissionViewPage() {
 				<div className="flex justify-between items-center mb-6">
 					<p className="text-gray-400">
 						By{' '}
-						{submission.author?.displayName ||
+						{submission.author?.id ? (
+							<Link
+								to={`/profiles/${submission.author.id}`}
+								className="text-gray-300 border-b border-transparent hover:text-white hover:border-white">
+								{submission.author.displayName ||
+									submission.author.email ||
+									'Unknown'}
+							</Link>
+						) : (
+							submission.author?.displayName ||
 							submission.author?.email ||
-							'Unknown'}{' '}
+							'Unknown'
+						)}{' '}
 						• Submitted {formatDate(submission.submittedAt)}
 					</p>
 
