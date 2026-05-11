@@ -35,7 +35,19 @@ function Header() {
 						className="text-gray-300 hover:text-white border border-white px-2">
 						Contest Form [TEMP LINK]
 					</Link>
+					{/*  VIEW PROFILE - Links to to a temp link*/}
+					<Link
+						to="/profiles/69dd79e6ddb8b4224c65fa1e"
+						className="text-gray-300 hover:text-white border border-white px-2">
+						View Profile (Temp Link)
+					</Link>
 
+					{/*  EDIT PROFILE - Links to to a temp link*/}
+					<Link
+						to="/profile/edit"
+						className="text-gray-300 hover:text-white border border-white px-2">
+						Edit Profile (Temp Link)
+					</Link>
 					{/* AUTH SECTION */}
 					{!user ? (
 						// Display Login/Signup links if not logged in
