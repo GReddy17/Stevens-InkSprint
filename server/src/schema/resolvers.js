@@ -179,7 +179,7 @@ export const resolvers = {
 	},
 
 	User: {
-		id: (parent) => parent._id.toString(),
+		id: (parent) => parent.id?.toString() || parent._id.toString(),
 	},
 
 	Submission: {
@@ -237,6 +237,34 @@ export const resolvers = {
 
 			return user
 		},
+
+		// Update user
+		updateUser: async (_, { input }, context) => {
+			if (!context.user) {
+				throw new Error('You must be logged in to update your profile')
+			}
+
+			const update = {}
+
+			if (input.displayName !== undefined) {
+				update.displayName = validateString(input.displayName, 'displayName')
+			}
+
+			if (Object.keys(update).length === 0) {
+				throw new Error('No profile fields provided')
+			}
+
+			const user = await User.findByIdAndUpdate(
+				context.user.id,
+				{ $set: update },
+				{ returnDocument: 'after' },
+			)
+
+			if (!user) throw new Error('User not found')
+
+			return user
+		},
+
 
 		// Create contest
 		createContest: async (_, { input }, context) => {

@@ -1,23 +1,39 @@
-import { gql, useQuery } from '@apollo/client'
+import { useState } from 'react'
+import { gql, useMutation, useQuery } from '@apollo/client'
 import { Link, useParams } from 'react-router-dom'
+import { updateProfile } from 'firebase/auth'
+import { auth } from '../firebase'
+import { formatDate } from '../utils/contestHelpers'
 
 const GET_PROFILE = gql`
-  query GetProfile($userId: ID!) {
-    user(id: $userId) {
-      id
-      displayName
-      createdAt
-    }
-    submissionsByUser(authorId: $userId) {
-      id
-      title
-      submittedAt
-      contest {
-        id
-        title
-      }
-    }
-  }
+	query GetProfile($userId: ID!) {
+		me {
+			id
+			displayName
+		}
+		user(id: $userId) {
+			id
+			displayName
+			createdAt
+		}
+		submissionsByUser(authorId: $userId) {
+			id
+			title
+			submittedAt
+			contest {
+				id
+				title
+			}
+		}
+	}
+`
+const UPDATE_USER = gql`
+	mutation UpdateUser($input: UpdateUserInput!) {
+		updateUser(input: $input) {
+			id
+			displayName
+		}
+	}
 `
 
 function ProfileViewPage() {
@@ -27,6 +43,10 @@ function ProfileViewPage() {
 		variables: { userId },
 		skip: !userId,
 	})
+	const [updateUser, { loading: isSaving }] = useMutation(UPDATE_USER)
+	const [isEditing, setIsEditing] = useState(false)
+	const [displayNameDraft, setDisplayNameDraft] = useState('')
+	const [profileMessage, setProfileMessage] = useState('')
 
 	if (loading) {
 		return (
@@ -43,9 +63,7 @@ function ProfileViewPage() {
 			<div className="bg-gray-900 text-white px-6 py-10">
 				<div className="max-w-3xl mx-auto">
 					<h1 className="text-3xl font-bold mb-4">Profile</h1>
-					<p className="text-red-400">
-						{error?.message || 'User not found.'}
-					</p>
+					<p className="text-red-400">{error?.message || 'User not found.'}</p>
 				</div>
 			</div>
 		)
@@ -53,30 +71,59 @@ function ProfileViewPage() {
 
 	const user = data.user
 	const submissions = data.submissionsByUser ?? []
+	const isOwnProfile = data.me?.id === user.id
 
-	// NOTE: profilePictureUrl and socialProfiles aren't on the User model yet. Once they're added, this view should render them too.
+	async function handleStartEditing() {
+		setDisplayNameDraft(user.displayName || '')
+		setProfileMessage('')
+		setIsEditing(true)
+	}
 
-	const formatDate = (value) => {
-		if (!value) return ''
+	async function handleCancelEditing() {
+		setDisplayNameDraft('')
+		setProfileMessage('')
+		setIsEditing(false)
+	}
 
-		let parsed = new Date(value)
+	async function handleSaveDisplayName(event) {
+		event.preventDefault()
+		setProfileMessage('')
 
-		if (Number.isNaN(parsed.getTime())) {
-			const asNumber = Number(value)
-			if (!Number.isNaN(asNumber)) {
-				parsed = new Date(asNumber)
+		const trimmedName = displayNameDraft.trim()
+
+		if (!trimmedName) {
+			setProfileMessage('Display name is required.')
+			return
+		}
+
+		try {
+			if (auth.currentUser) {
+				await updateProfile(auth.currentUser, {
+					displayName: trimmedName,
+				})
+				await auth.currentUser.getIdToken(true)
 			}
-		}
 
-		if (Number.isNaN(parsed.getTime())) {
-			return String(value)
-		}
+			await updateUser({
+				variables: {
+					input: {
+						displayName: trimmedName,
+					},
+				},
+				refetchQueries: [
+					{
+						query: GET_PROFILE,
+						variables: { userId },
+					},
+				],
+				awaitRefetchQueries: true,
+			})
 
-		return parsed.toLocaleDateString(undefined, {
-			year: 'numeric',
-			month: 'long',
-			day: 'numeric',
-		})
+			setIsEditing(false)
+			setProfileMessage('Display name updated.')
+		} catch (error) {
+			setProfileMessage(error.message || 'Failed to update display name.')
+		}
 	}
 
 	return (
@@ -89,9 +136,62 @@ function ProfileViewPage() {
 							{(user.displayName || '?').charAt(0).toUpperCase()}
 						</div>
 						<div className="flex-1">
-							<h1 className="text-3xl font-bold">
-								{user.displayName || 'Unnamed User'}
-							</h1>
+							{isEditing ? (
+								<form onSubmit={handleSaveDisplayName} className="space-y-3">
+									<label htmlFor="displayName" className="sr-only">
+										Display Name
+									</label>
+									<input
+										id="displayName"
+										type="text"
+										value={displayNameDraft}
+										onChange={(event) =>
+											setDisplayNameDraft(event.target.value)
+										}
+										className="w-full max-w-md rounded-lg bg-gray-900 border border-gray-700 px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-gray-500"
+										required
+									/>
+									<div className="flex gap-2">
+										<button
+											type="submit"
+											disabled={isSaving}
+											className="bg-white text-gray-900 font-medium px-4 py-2 rounded-lg hover:bg-gray-200 disabled:opacity-50">
+											{isSaving ? 'Saving...' : 'Save'}
+										</button>
+										<button
+											type="button"
+											onClick={handleCancelEditing}
+											className="bg-gray-700 text-white font-medium px-4 py-2 rounded-lg hover:bg-gray-600">
+											Cancel
+										</button>
+									</div>
+								</form>
+							) : (
+								<div className="flex flex-wrap items-center gap-3">
+									<h1 className="text-3xl font-bold">
+										{user.displayName || 'Unnamed User'}
+									</h1>
+									{isOwnProfile && (
+										<button
+											type="button"
+											onClick={handleStartEditing}
+											className="text-sm bg-gray-700 hover:bg-gray-600 text-white px-3 py-1 rounded-lg">
+											Edit
+										</button>
+									)}
+								</div>
+							)}
+							{profileMessage && (
+								<p
+									className={`text-sm mt-2 ${
+										profileMessage.toLowerCase().includes('updated')
+											? 'text-green-400'
+											: 'text-red-400'
+									}`}>
+									{profileMessage}
+								</p>
+							)}
+
 							{user.createdAt && (
 								<p className="text-gray-500 text-sm mt-2">
 									Member since {formatDate(user.createdAt)}
@@ -118,9 +218,7 @@ function ProfileViewPage() {
 								<li
 									key={submission.id}
 									className="border border-gray-700 rounded-lg p-4 hover:bg-gray-900 transition-colors">
-									<Link
-										to={`/submissions/${submission.id}`}
-										className="block">
+									<Link to={`/submissions/${submission.id}`} className="block">
 										<p className="font-medium text-white">
 											{submission.title || 'Untitled Submission'}
 										</p>
