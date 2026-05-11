@@ -5,12 +5,11 @@ services:
     ports:
       - "4000:4000"
     env_file:
-      - .env
+      - ./server/.env
     environment:
       - PORT=4000
       - MONGODB_URI=mongodb://mongo:27017/inksprint
       - REDIS_URL=redis://redis:6379
-      - SEED=false
     depends_on:
       - mongo
       - redis

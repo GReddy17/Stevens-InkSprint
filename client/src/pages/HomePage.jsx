@@ -49,7 +49,7 @@ function HomePage() {
 
 	return (
 		<div className="space-y-10">
-			<section className="py-10">
+			<section className="py-6">
 				<div className="max-w-3xl">
 					<p className="text-sm uppercase tracking-[0.25em] text-gray-500 mb-3">
 						Creative writing competitions
@@ -69,18 +69,30 @@ function HomePage() {
 					defined time window, after which submissions are reviewed and winners
 					are selected.
 				</div>
+				<Link
+					to="/contests/new"
+					className="block text-center max-w-md bg-white text-gray-900 font-medium mx-auto my-6 py-2 rounded-lg hover:bg-gray-200 transition">
+					Create a Contest
+				</Link>
 			</section>
 
 			<section>
-				<div className="mb-6">
+				<div className="mb-6 flex justify-between items-center">
 					<div>
 						<h2 className="text-2xl font-semibold">Active Contests</h2>
 					</div>
-					<Link
-						to={`/contests/`}
-						className="block text-center w-42 bg-white text-gray-900 font-medium my-2 py-2 rounded-lg hover:bg-gray-200 transition">
-						Browse All Contests
-					</Link>
+					<div className="flex gap-4">
+						<Link
+							to="/leaderboard/"
+							className="block text-center w-42 bg-yellow-600 text-white font-medium my-2 py-2 rounded-lg hover:bg-yellow-700 transition">
+							🏆 Leaderboard
+						</Link>
+						<Link
+							to={`/contests/`}
+							className="block text-center w-42 bg-white text-gray-900 font-medium my-2 py-2 rounded-lg hover:bg-gray-200 transition">
+							Browse All
+						</Link>
+					</div>
 				</div>
 
 				{loading && <p className="text-gray-400">Loading contests...</p>}
@@ -108,15 +120,13 @@ function HomePage() {
 				</div>
 			</section>
 			<section>
-				<div className="mb-6">
-					<div>
-						<h2 className="text-2xl font-semibold">Upcoming Contests</h2>
-											<Link
+				<div className="mb-6 flex justify-between items-center">
+					<h2 className="text-2xl font-semibold">Upcoming Contests</h2>
+					<Link
 						to={`/contests/`}
 						className="block text-center w-42 bg-white text-gray-900 font-medium my-2 py-2 rounded-lg hover:bg-gray-200 transition">
 						Browse All Contests
 					</Link>
-					</div>
 				</div>
 
 				{loading && <p className="text-gray-400">Loading contests...</p>}
