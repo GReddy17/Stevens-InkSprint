@@ -1,7 +1,8 @@
 import { gql, useMutation, useQuery } from '@apollo/client'
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 import { useParams } from 'react-router-dom'
 import { useNavigate } from 'react-router-dom'
+import { getCountdownTarget, formatCountdown, getSecondsRemaining } from '../utils/contestHelpers'
 
 const GET_CONTEST = gql`
 	query GetContest($contestId: ID!) {
@@ -10,7 +11,10 @@ const GET_CONTEST = gql`
 			title
 			prompt
 			rules
+			startTime
 			endTime
+			votingStartTime
+			votingEndTime
 			wordMin
 			wordMax
 		}
@@ -29,14 +33,21 @@ const CREATE_SUBMISSION = gql`
 	}
 `
 
-// USE IDs FROM YOUR OWN SEEDED DATA OR THIS WILL BREAK - KT
 function SubmissionFormPage() {
 	const { contestId } = useParams()
 	const [submissionTitle, setSubmissionTitle] = useState('')
 	const [submissionDescription, setSubmissionDescription] = useState('')
 	const [submissionContent, setSubmissionContent] = useState('')
 	const [submitMessage, setSubmitMessage] = useState('')
+	const [currentTime, setCurrentTime] = useState(Date.now())
 	const navigate = useNavigate()
+
+	useEffect(() => {
+		const intervalId = setInterval(() => {
+			setCurrentTime(Date.now())
+		}, 1000)
+		return () => clearInterval(intervalId)
+	}, [])
 
 	const { loading, error, data } = useQuery(GET_CONTEST, {
 		variables: { contestId },
@@ -48,6 +59,14 @@ function SubmissionFormPage() {
 
 	const contest = data?.contest
 
+	// Check if submission period has ended
+	const isSubmissionEnded = contest && currentTime > new Date(+contest.endTime).getTime()
+
+	// Countdown timer
+	const target = contest ? new Date(+contest.endTime).getTime() : null
+	const secondsRemaining = getSecondsRemaining(target, currentTime)
+	const countdown = formatCountdown(secondsRemaining)
+
 	const wordCount = useMemo(() => {
 		return submissionContent.trim() === ''
 			? 0
@@ -55,7 +74,6 @@ function SubmissionFormPage() {
 	}, [submissionContent])
 
 	const isOverWordMax = contest?.wordMax != null && wordCount > contest.wordMax
-
 	const isUnderWordMin = contest?.wordMin != null && wordCount < contest.wordMin
 
 	async function handleSubmit(event) {
@@ -64,6 +82,11 @@ function SubmissionFormPage() {
 
 		if (!contest) {
 			setSubmitMessage('Contest data is not available.')
+			return
+		}
+
+		if (isSubmissionEnded) {
+			setSubmitMessage('Submission period has ended. Better luck next time!')
 			return
 		}
 
@@ -92,11 +115,7 @@ function SubmissionFormPage() {
 			})
 
 			const newSubmissionId = data.createSubmission.id
-
 			navigate(`/submissions/${newSubmissionId}`)
-
-			console.log('Created submission:', data.createSubmission)
-
 			setSubmitMessage('Submission created successfully.')
 			setSubmissionTitle('')
 			setSubmissionDescription('')
@@ -140,6 +159,20 @@ function SubmissionFormPage() {
 					<h2 className="text-2xl font-semibold mb-2">{contest.title}</h2>
 					<p className="text-gray-300 mb-4">{contest.prompt}</p>
 
+					{isSubmissionEnded ? (
+						<div className="bg-red-900/50 border border-red-700 rounded-lg p-4 mb-4">
+							<p className="text-red-400 font-medium">
+								Submission period has ended. Better luck next time!
+							</p>
+						</div>
+					) : countdown && (
+						<div className="bg-yellow-900/30 border border-yellow-700 rounded-lg p-3 mb-4">
+							<p className="text-yellow-400 text-sm">
+								Time remaining: <span className="font-medium">{countdown}</span>
+							</p>
+						</div>
+					)}
+
 					<div className="space-y-2 text-sm text-gray-400">
 						<p>
 							<span className="font-medium text-gray-300">Rules:</span>{' '}
@@ -147,21 +180,17 @@ function SubmissionFormPage() {
 						</p>
 						<p>
 							<span className="font-medium text-gray-300">Ends:</span>{' '}
-							{new Date(contest.endTime).toLocaleString()}
+							{new Date(+contest.endTime).toLocaleString()}
 						</p>
 						{contest.wordMin != null && (
 							<p>
-								<span className="font-medium text-gray-300">
-									Minimum Words:
-								</span>{' '}
+								<span className="font-medium text-gray-300">Minimum Words:</span>{' '}
 								{contest.wordMin}
 							</p>
 						)}
 						{contest.wordMax != null && (
 							<p>
-								<span className="font-medium text-gray-300">
-									Maximum Words:
-								</span>{' '}
+								<span className="font-medium text-gray-300">Maximum Words:</span>{' '}
 								{contest.wordMax}
 							</p>
 						)}
@@ -183,13 +212,12 @@ function SubmissionFormPage() {
 							className="w-full rounded-lg bg-gray-900 border border-gray-700 px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-gray-500"
 							placeholder="Enter a title for your story"
 							required
+							disabled={isSubmissionEnded}
 						/>
 					</div>
 
 					<div>
-						<label
-							htmlFor="submissionDescription"
-							className="block mb-2 font-medium">
+						<label htmlFor="submissionDescription" className="block mb-2 font-medium">
 							Short Description
 						</label>
 						<input
@@ -199,13 +227,12 @@ function SubmissionFormPage() {
 							onChange={(event) => setSubmissionDescription(event.target.value)}
 							className="w-full rounded-lg bg-gray-900 border border-gray-700 px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-gray-500"
 							placeholder="Optional short description"
+							disabled={isSubmissionEnded}
 						/>
 					</div>
 
 					<div>
-						<label
-							htmlFor="submissionContent"
-							className="block mb-2 font-medium">
+						<label htmlFor="submissionContent" className="block mb-2 font-medium">
 							Story Content
 						</label>
 						<textarea
@@ -215,24 +242,18 @@ function SubmissionFormPage() {
 							className="w-full min-h-75 rounded-lg bg-gray-900 border border-gray-700 px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-gray-500"
 							placeholder="Write your story here..."
 							required
+							disabled={isSubmissionEnded}
 						/>
 					</div>
 
 					<div className="flex flex-wrap items-center justify-between gap-3 text-sm">
 						<div className="space-y-1">
-							<p
-								className={
-									isOverWordMax || isUnderWordMin
-										? 'text-red-400'
-										: 'text-gray-400'
-								}>
+							<p className={isOverWordMax || isUnderWordMin ? 'text-red-400' : 'text-gray-400'}>
 								Word Count: {wordCount}
 							</p>
-
 							{contest.wordMin != null && (
 								<p className="text-gray-500">Minimum: {contest.wordMin}</p>
 							)}
-
 							{contest.wordMax != null && (
 								<p className="text-gray-500">Maximum: {contest.wordMax}</p>
 							)}
@@ -240,19 +261,14 @@ function SubmissionFormPage() {
 
 						<button
 							type="submit"
-							className="bg-white text-gray-900 font-medium px-5 py-2.5 rounded-lg hover:bg-gray-200 transition disabled:opacity-50"
-							disabled={isOverWordMax || isUnderWordMin || isSubmitting}>
-							{isSubmitting ? 'Submitting...' : 'Submit Story'}
+							className="bg-white text-gray-900 font-medium px-5 py-2.5 rounded-lg hover:bg-gray-200 transition disabled:opacity-50 disabled:cursor-not-allowed"
+							disabled={isOverWordMax || isUnderWordMin || isSubmitting || isSubmissionEnded}>
+							{isSubmitting ? 'Submitting...' : isSubmissionEnded ? 'Submissions Closed' : 'Submit Story'}
 						</button>
 					</div>
 
 					{submitMessage && (
-						<p
-							className={`text-sm ${
-								submitMessage.toLowerCase().includes('success')
-									? 'text-green-400'
-									: 'text-red-400'
-							}`}>
+						<p className={`text-sm ${submitMessage.toLowerCase().includes('success') ? 'text-green-400' : 'text-red-400'}`}>
 							{submitMessage}
 						</p>
 					)}

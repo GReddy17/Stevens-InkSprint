@@ -11,6 +11,8 @@ const ContestForm = ({ onSubmit, initialData = {} }) => {
     startTime: initialData.startTime ? new Date(initialData.startTime) : null,
     endTime: initialData.endTime ? new Date(initialData.endTime) : null,
     votingType: initialData.votingType || 'EVERYONE',
+    votingStartTime: initialData.votingStartTime ? new Date(initialData.votingStartTime) : null,
+    votingEndTime: initialData.votingEndTime ? new Date(initialData.votingEndTime) : null,
     currentJudges: initialData.votingGroupMembers || [],
     votingGroupMemberIds: initialData.votingGroupMemberIds || [],
     wordMin: initialData.wordMin ?? '',
@@ -60,6 +62,8 @@ const ContestForm = ({ onSubmit, initialData = {} }) => {
       wordMax: max,
       startTime: formData.startTime?.toISOString(),
       endTime: formData.endTime?.toISOString(),
+      votingStartTime: formData.votingStartTime?.toISOString(),
+      votingEndTime: formData.votingEndTime?.toISOString(),
     }
 
     onSubmit?.(payload)
@@ -153,6 +157,34 @@ const ContestForm = ({ onSubmit, initialData = {} }) => {
           <option value="JUDGES">Judges</option>
           <option value="CREATOR">Creator</option>
         </select>
+      </div>
+
+      {/* Voting Period */}
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <label className="block mb-2 font-medium">Voting Start Time</label>
+          <DatePicker
+            selected={formData.votingStartTime}
+            onChange={(date) => setFormData((prev) => ({ ...prev, votingStartTime: date }))}
+            showTimeSelect
+            dateFormat="Pp"
+            placeholderText="Select voting start"
+            minDate={formData.endTime}
+            className="w-full rounded-lg bg-gray-900 border border-gray-700 px-4 py-3 text-white"
+          />
+        </div>
+        <div>
+          <label className="block mb-2 font-medium">Voting End Time</label>
+          <DatePicker
+            selected={formData.votingEndTime}
+            onChange={(date) => setFormData((prev) => ({ ...prev, votingEndTime: date }))}
+            showTimeSelect
+            dateFormat="Pp"
+            placeholderText="Select voting end"
+            minDate={formData.votingStartTime || formData.endTime}
+            className="w-full rounded-lg bg-gray-900 border border-gray-700 px-4 py-3 text-white"
+          />
+        </div>
       </div>
 
       {formData.votingType === 'JUDGES' && (
