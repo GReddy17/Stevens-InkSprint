@@ -245,6 +245,10 @@ const seed = async () => {
 				votingGroupMemberIds,
 				wordMin: template.wordMin,
 				wordMax: template.wordMax,
+				votingStartTime: template.phase === 'VOTING' ? endTime : null,
+				votingEndTime: template.phase === 'VOTING'
+					? new Date(endTime.getTime() + 24 * 60 * 60 * 1000) // 24 hours after end
+					: null,
 			})
 
 			const status = getContestStatus(contest)

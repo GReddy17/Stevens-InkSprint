@@ -80,8 +80,7 @@ function SubmissionViewPage() {
 		const auth = getAuth()
 		const unsubscribe = onAuthStateChanged(auth, (user) => {
 			if (user) {
-				// Get user's Firebase UID to match with author
-				setCurrentUserDbId(user.uid)
+				setCurrentUserDbId(user.email)
 			} else {
 				setCurrentUserDbId(null)
 			}
@@ -90,7 +89,7 @@ function SubmissionViewPage() {
 	}, [])
 
 	// Check if current user is the author of this submission
-	const isAuthor = data?.submission?.author?.firebaseUid === currentUserDbId
+	const isAuthor = data?.submission?.author?.email === currentUserDbId
 
 	const handleVote = async () => {
 		setVoteMessage('')

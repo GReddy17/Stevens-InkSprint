@@ -13,13 +13,33 @@ const GET_CONTESTS = gql`
 			startTime
 			endTime
 			votingType
-			votingDurationHours
+			votingStartTime
+			votingEndTime
 			wordMin
 			wordMax
 			submissionCount
 		}
 	}
 `
+
+// Calculate contest status client-side based on current time
+function getContestStatus(contest, now) {
+	const startTime = new Date(+contest.startTime).getTime()
+	const endTime = new Date(+contest.endTime).getTime()
+
+	// Use explicit votingStartTime/votingEndTime only - no fallback
+	const votingStartTime = contest.votingStartTime ? new Date(+contest.votingStartTime).getTime() : null
+	const votingEndTime = contest.votingEndTime ? new Date(+contest.votingEndTime).getTime() : null
+
+	if (now < startTime) return 'UPCOMING'
+	if (now <= endTime) return 'ACTIVE'
+	// Only enter VOTING if explicit voting times are set
+	if (votingStartTime && now < votingStartTime) return 'ACTIVE'
+	if (votingStartTime && votingEndTime && now >= votingStartTime && now <= votingEndTime) return 'VOTING'
+	// If no explicit voting times → go directly to COMPLETED
+	if (!votingStartTime || !votingEndTime) return 'COMPLETED'
+	return 'COMPLETED'
+}
 
 function HomePage() {
 	const [currentTime, setCurrentTime] = useState(Date.now())
@@ -32,20 +52,23 @@ function HomePage() {
 		return () => clearInterval(intervalId)
 	}, [])
 
-	const { loading, error, data } = useQuery(GET_CONTESTS)
+	const { loading, error, data, refetch } = useQuery(GET_CONTESTS, {
+		pollInterval: 30000, // Poll every 30 seconds for new contests
+	})
 
 	const contests = data?.contests || []
 
-	const upcomingContests = contests.filter((contest) => {
-		const matchesStatus = contest.status === 'UPCOMING'
+	// Calculate status dynamically based on current time
+	const categorizedContests = contests.reduce((acc, contest) => {
+		const status = getContestStatus(contest, currentTime)
+		if (!acc[status]) acc[status] = []
+		acc[status].push(contest)
+		return acc
+	}, {})
 
-		return matchesStatus
-	})
-	const activeContests = contests.filter((contest) => {
-		const matchesStatus = contest.status === 'ACTIVE'
-
-		return matchesStatus
-	})
+	const upcomingContests = categorizedContests.UPCOMING || []
+	const activeContests = categorizedContests.ACTIVE || []
+	const votingContests = categorizedContests.VOTING || []
 
 	return (
 		<div className="space-y-10">
@@ -115,6 +138,42 @@ function HomePage() {
 							key={contest.id}
 							contest={contest}
 							currentTime={currentTime}
+							dynamicStatus={getContestStatus(contest, currentTime)}
+						/>
+					))}
+				</div>
+			</section>
+			<section>
+				<div className="mb-6 flex justify-between items-center">
+					<h2 className="text-2xl font-semibold">Voting Phase</h2>
+					<Link
+						to={`/contests/`}
+						className="block text-center w-42 bg-white text-gray-900 font-medium my-2 py-2 rounded-lg hover:bg-gray-200 transition">
+						Browse All Contests
+					</Link>
+				</div>
+
+				{loading && <p className="text-gray-400">Loading contests...</p>}
+
+				{error && (
+					<p className="text-red-400">
+						Error loading contests: {error.message}
+					</p>
+				)}
+
+				{!loading && !error && votingContests.length === 0 && (
+					<div className="bg-gray-800 border border-gray-700 rounded-2xl p-8 text-center">
+						<p className="text-gray-400">No contests found.</p>
+					</div>
+				)}
+
+				<div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+					{votingContests.map((contest) => (
+						<ContestCard
+							key={contest.id}
+							contest={contest}
+							currentTime={currentTime}
+							dynamicStatus={getContestStatus(contest, currentTime)}
 						/>
 					))}
 				</div>
@@ -149,6 +208,7 @@ function HomePage() {
 							key={contest.id}
 							contest={contest}
 							currentTime={currentTime}
+							dynamicStatus={getContestStatus(contest, currentTime)}
 						/>
 					))}
 				</div>

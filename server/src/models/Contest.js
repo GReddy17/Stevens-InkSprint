@@ -37,6 +37,12 @@ const contestSchema = new mongoose.Schema(
       type: Number,
       default: 48,
     },
+    votingStartTime: {
+      type: Date,
+    },
+    votingEndTime: {
+      type: Date,
+    },
     votingGroupMemberIds: [{
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
