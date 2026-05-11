@@ -117,6 +117,11 @@ export const typeDefs = `#graphql
     displayName: String
   }
 
+  input UpdateUserInput {
+    displayName: String
+  }
+
+
   input CreateSubmissionInput {
     contestId: ID!
     content: String!
@@ -153,6 +158,7 @@ export const typeDefs = `#graphql
 
   type Mutation {
     createUser(input: CreateUserInput!): User!
+    updateUser(input: UpdateUserInput!): User!
 
     createContest(input: CreateContestInput!): Contest!
     updateContest(id: ID!, input: UpdateContestInput!): Contest!
