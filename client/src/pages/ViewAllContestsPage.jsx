@@ -74,7 +74,7 @@ function ViewAllContestsPage() {
 			statusFilter === 'ALL' || dynamicStatus === statusFilter
 
 		return matchesSearch && matchesStatus
-	})
+	}).sort((a, b) => a.title.localeCompare(b.title))
 
 	return (
 		<div className="space-y-10">

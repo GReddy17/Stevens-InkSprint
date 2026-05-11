@@ -1,5 +1,10 @@
 import { gql, useQuery } from '@apollo/client'
-import { formatDate, getCountdownTarget, formatCountdown, getSecondsRemaining } from '../utils/contestHelpers'
+import {
+	formatDate,
+	getCountdownTarget,
+	formatCountdown,
+	getSecondsRemaining,
+} from '../utils/contestHelpers'
 import { useParams, Link } from 'react-router-dom'
 import SubmissionCard from '../components/SubmissionCard'
 import { useState, useEffect } from 'react'
@@ -69,13 +74,23 @@ function ContestViewPage() {
 		const endTime = new Date(+c.endTime).getTime()
 
 		// Use explicit votingStartTime/votingEndTime only - no fallback
-		const votingStartTime = c.votingStartTime ? new Date(+c.votingStartTime).getTime() : null
-		const votingEndTime = c.votingEndTime ? new Date(+c.votingEndTime).getTime() : null
+		const votingStartTime = c.votingStartTime
+			? new Date(+c.votingStartTime).getTime()
+			: null
+		const votingEndTime = c.votingEndTime
+			? new Date(+c.votingEndTime).getTime()
+			: null
 
 		if (now < startTime) return 'UPCOMING'
 		if (now <= endTime) return 'ACTIVE'
 		if (votingStartTime && now < votingStartTime) return 'ACTIVE'
-		if (votingStartTime && votingEndTime && now >= votingStartTime && now <= votingEndTime) return 'VOTING'
+		if (
+			votingStartTime &&
+			votingEndTime &&
+			now >= votingStartTime &&
+			now <= votingEndTime
+		)
+			return 'VOTING'
 		if (!votingStartTime || !votingEndTime) return 'COMPLETED'
 		return 'COMPLETED'
 	}
@@ -128,7 +143,13 @@ function ContestViewPage() {
 				</Link>
 				<div className="flex flex-wrap items-start justify-between gap-3 mb-2">
 					<h1 className="text-3xl font-bold">{contest.title}</h1>
-					<span className="text-xs uppercase tracking-wide bg-gray-800 border border-gray-700 px-3 py-1 rounded-full text-gray-300">
+
+					<span
+						className={`text-xs uppercase tracking-wide bg-gray-800 border border-gray-700 px-3 py-1 rounded-full text-gray-300
+						${dynamicStatus === 'UPCOMING' ? 'text-blue-300' : ''}
+						${dynamicStatus === 'ACTIVE' ? 'text-green-300' : ''}
+						${dynamicStatus === 'VOTING' ? 'text-orange-300' : ''}
+						${dynamicStatus === 'COMPLETED' ? 'text-red-300' : ''}`}>
 						{dynamicStatus}
 					</span>
 				</div>
@@ -200,19 +221,19 @@ function ContestViewPage() {
 
 					<div className="flex justify-between items-center">
 						<h2 className="text-2xl font-semibold">Submissions</h2>
-							<div>
-								<span className="mr-4">Sort By:</span>
-								<select
-									value={sortBy}
-									onChange={(e) => setSortBy(e.target.value)}
-									className="bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-gray-600">
-									<option value="submittedAt">Submission Date</option>
-									<option value="averageTotalScore">Total Score</option>
-									<option value="averageStyleScore">Style</option>
-									<option value="averageCreativityScore">Creativity</option>
-									<option value="averageStorytellingScore">Storytelling</option>
-								</select>
-							</div>
+						<div>
+							<span className="mr-4">Sort By:</span>
+							<select
+								value={sortBy}
+								onChange={(e) => setSortBy(e.target.value)}
+								className="bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-gray-600">
+								<option value="submittedAt">Submission Date</option>
+								<option value="averageTotalScore">Total Score</option>
+								<option value="averageStyleScore">Style</option>
+								<option value="averageCreativityScore">Creativity</option>
+								<option value="averageStorytellingScore">Storytelling</option>
+							</select>
+						</div>
 					</div>
 
 					{contest.submissionCount === 0 ? (

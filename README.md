@@ -1,24 +1,10 @@
 # The Ink Sprint: A Competitive Writing Tournament Platform
 
-## Commands to run
-
-# Build + start all containers
-docker-compose up --build
-
-# Start in background
-docker-compose up -d --build
-
-# Stop all
-docker-compose down
-
-# View logs
-docker-compose logs -f
-
 ## Project Overview
 
 The Ink Sprint is a web application designed for hosting creative writing competitions where participants submit entries within a defined time window (ranging from hours to days), after which submissions are reviewed and winners are selected. The platform will manage contests, user participation, secure submissions, and judging workflows while providing downloadable results for participants.
 
-The system aims to create an organized and accessible environment for running writing competitions without requiring manual coordination. Administrators will be able to create contests with prompts and deadlines, participants will submit their work through a guided interface, and judges or administrators will evaluate entries and assign placements.
+The system aims to create an organized and accessible environment for running writing competitions without requiring manual coordination. Users will be able to create contests with prompts and deadlines, participants will submit their work through a guided interface, and judges will evaluate entries. The contest creator can select whether only they can vote, pick specific judges from the list of users, or let anyone vote. An aggregate score based on the average creativity, style, and storytelling scores is tabulated after the voting stage and 1st, 2nd, and 3rd place are awarded. Certificates for the top three entries are generated using ImageMagick, and can be downloaded by that user in .png format.
 
 ---
 
@@ -77,7 +63,7 @@ GraphQL: http://localhost:4000
 
 ## Core Technical Requirements
 
-This project satisfies all course objectives and utilizes the following mandated technologies:
+This project satisfies all course objectives and utilizes the following technologies:
 
 ### 1. Primary Backend
 
@@ -91,11 +77,14 @@ This project satisfies all course objectives and utilizes the following mandated
 
 - **Firebase Authentication:** Handles user registration and login, providing secure identity management without requiring custom authentication logic. Verified user identity will be used to control permissions for submissions and judging actions.
 
-### 3. Independent Technologies (External Services)
+- **Redis:** Provides an optional caching layer for the backend. The application is configured to connect to Redis in Docker or locally, and falls back safely to MongoDB-backed queries if Redis is unavailable.
+ 
+
+### 3. Independent Technologies 
 
 - **Docker:** A containerization platform used to package the application and its dependencies into a consistent environment that runs the same across development machines and deployment systems. This simplifies collaboration and deployment across different operating systems.
 
-- **ImageMagick:** A command-line image processing tool that will be used to programmatically generate downloadable winner certificates using contest data such as participant name, contest title, and date.
+- **ImageMagick:** A command-line image processing tool that is used to programmatically generate downloadable winner certificates using contest data such as participant name, contest title, and date.
 
 ---
 
@@ -115,7 +104,7 @@ Administrators can create contests with prompts, deadlines, and submission rules
 
 ### 2. Submission and Judging Workflow
 
-Judges or administrators can review submissions, assign scores or placements, and select winners through a structured interface designed to simplify evaluation.
+Judges can review submissions and assign scores, and winners are selected automatically using aggregate scores.
 
 ### 3. User Authentication and Security
 

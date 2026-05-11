@@ -150,6 +150,7 @@ function SubmissionViewPage() {
 	}
 
 	const submission = data.submission
+	const contestStatus = submission.contest?.status
 
 	return (
 		<div className="bg-gray-900 text-white px-6 py-10">
@@ -185,6 +186,18 @@ function SubmissionViewPage() {
 						</Link>
 					)}
 				</div>
+
+				{contestStatus && (
+					<span
+						className={`bg-gray-700 rounded-full px-3 py-1 uppercase
+			${contestStatus === 'UPCOMING' ? 'text-blue-300' : ''}
+			${contestStatus === 'ACTIVE' ? 'text-green-300' : ''}
+			${contestStatus === 'VOTING' ? 'text-orange-300' : ''}
+			${contestStatus === 'COMPLETED' ? 'text-red-300' : ''}
+		`}>
+						Contest: {contestStatus}
+					</span>
+				)}
 
 				{submission.description && (
 					<p className="text-gray-300 my-6">
