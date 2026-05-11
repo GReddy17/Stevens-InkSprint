@@ -37,21 +37,19 @@ export function getDateFromValue(value) {
 	return Number.isNaN(date.getTime()) ? null : date
 }
 
-export function getCountdownTarget(contest) {
+export function getCountdownTarget(contest, dynamicStatus) {
 	if (!contest) return null
 
-	if (contest.status === 'UPCOMING') return contest.startTime || null
-	if (contest.status === 'ACTIVE') return contest.endTime || null
+	const status = dynamicStatus || contest.status
 
-	if (contest.status === 'VOTING') {
-		const endTime = getDateFromValue(contest.endTime)
-		if (!endTime) return null
+	if (status === 'UPCOMING') return contest.startTime ? +contest.startTime : null
+	if (status === 'ACTIVE') return contest.endTime ? +contest.endTime : null
 
-		const votingDurationHours = Number(contest.votingDurationHours) || 48
-
-		return new Date(
-			endTime.getTime() + votingDurationHours * 60 * 60 * 1000,
-		).getTime()
+	if (status === 'VOTING') {
+		if (contest.votingEndTime) {
+			return +contest.votingEndTime
+		}
+		return null
 	}
 
 	return null

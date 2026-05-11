@@ -14,13 +14,31 @@ const GET_CONTESTS = gql`
 			startTime
 			endTime
 			votingType
-			votingDurationHours
+			votingStartTime
+			votingEndTime
 			wordMin
 			wordMax
 			submissionCount
 		}
 	}
 `
+
+// Calculate contest status client-side based on current time
+function getContestStatus(contest, now) {
+	const startTime = new Date(+contest.startTime).getTime()
+	const endTime = new Date(+contest.endTime).getTime()
+
+	// Use explicit votingStartTime/votingEndTime only - no fallback
+	const votingStartTime = contest.votingStartTime ? new Date(+contest.votingStartTime).getTime() : null
+	const votingEndTime = contest.votingEndTime ? new Date(+contest.votingEndTime).getTime() : null
+
+	if (now < startTime) return 'UPCOMING'
+	if (now <= endTime) return 'ACTIVE'
+	if (votingStartTime && now < votingStartTime) return 'ACTIVE'
+	if (votingStartTime && votingEndTime && now >= votingStartTime && now <= votingEndTime) return 'VOTING'
+	if (!votingStartTime || !votingEndTime) return 'COMPLETED'
+	return 'COMPLETED'
+}
 
 function ViewAllContestsPage() {
 	const [contestSearchTerm, setContestSearchTerm] = useState('')
@@ -35,9 +53,14 @@ function ViewAllContestsPage() {
 		return () => clearInterval(intervalId)
 	}, [])
 
-	const { loading, error, data } = useQuery(GET_CONTESTS)
+	const { loading, error, data } = useQuery(GET_CONTESTS, {
+		pollInterval: 30000,
+	})
 
 	const contests = data?.contests || []
+
+	// Calculate dynamic status for each contest
+	const getDynamicStatus = (contest) => getContestStatus(contest, currentTime)
 
 	const filteredContests = contests.filter((contest) => {
 		const normalizedSearchTerm = contestSearchTerm.toLowerCase()
@@ -46,8 +69,9 @@ function ViewAllContestsPage() {
 			contest.title.toLowerCase().includes(normalizedSearchTerm) ||
 			contest.prompt.toLowerCase().includes(normalizedSearchTerm)
 
+		const dynamicStatus = getDynamicStatus(contest)
 		const matchesStatus =
-			statusFilter === 'ALL' || contest.status === statusFilter
+			statusFilter === 'ALL' || dynamicStatus === statusFilter
 
 		return matchesSearch && matchesStatus
 	})
@@ -108,6 +132,7 @@ function ViewAllContestsPage() {
 							key={contest.id}
 							contest={contest}
 							currentTime={currentTime}
+							dynamicStatus={getDynamicStatus(contest)}
 						/>
 					))}
 				</div>

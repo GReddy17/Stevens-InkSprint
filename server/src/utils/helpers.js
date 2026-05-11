@@ -1,19 +1,22 @@
 import Contest from '../models/Contest.js'
 import Submission from '../models/Submission.js'
 import User from '../models/User.js'
+import { generateCertificate } from './certificateGenerator.js'
 
 // Get dynamic contest status based on startTime/endTime
 export function getContestStatus(contest) {
 	const now = new Date()
 	const startTime = new Date(contest.startTime)
 	const endTime = new Date(contest.endTime)
-	const votingEndTime = new Date(
-		endTime.getTime() + contest.votingDurationHours * 60 * 60 * 1000,
-	)
+
+	const votingStartTime = contest.votingStartTime ? new Date(contest.votingStartTime) : null
+	const votingEndTime = contest.votingEndTime ? new Date(contest.votingEndTime) : null
 
 	if (now < startTime) return 'UPCOMING'
 	if (now <= endTime) return 'ACTIVE'
-	if (now <= votingEndTime) return 'VOTING'
+	if (votingStartTime && now < votingStartTime) return 'ACTIVE'
+	if (votingStartTime && votingEndTime && now >= votingStartTime && now <= votingEndTime) return 'VOTING'
+	if (!votingStartTime || !votingEndTime) return 'COMPLETED'
 	return 'COMPLETED'
 }
 

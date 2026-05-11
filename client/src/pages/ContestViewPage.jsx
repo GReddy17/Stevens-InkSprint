@@ -1,8 +1,8 @@
 import { gql, useQuery } from '@apollo/client'
-import { formatDate } from '../utils/contestHelpers'
+import { formatDate, getCountdownTarget, formatCountdown, getSecondsRemaining } from '../utils/contestHelpers'
 import { useParams, Link } from 'react-router-dom'
 import SubmissionCard from '../components/SubmissionCard'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 const GET_CONTEST = gql`
 	query GetContest($contestId: ID!) {
@@ -15,7 +15,8 @@ const GET_CONTEST = gql`
 			endTime
 			status
 			votingType
-			votingDurationHours
+			votingStartTime
+			votingEndTime
 			wordMin
 			wordMax
 			submissionCount
@@ -45,6 +46,14 @@ const GET_CONTEST = gql`
 function ContestViewPage() {
 	const { contestId } = useParams()
 	const [sortBy, setSortBy] = useState('totalScore')
+	const [currentTime, setCurrentTime] = useState(Date.now())
+
+	useEffect(() => {
+		const intervalId = setInterval(() => {
+			setCurrentTime(Date.now())
+		}, 1000)
+		return () => clearInterval(intervalId)
+	}, [])
 
 	const { loading, error, data } = useQuery(GET_CONTEST, {
 		variables: { contestId },
@@ -52,6 +61,26 @@ function ContestViewPage() {
 	})
 
 	const contest = data?.contest
+
+	// Calculate dynamic status client-side
+	const getDynamicStatus = (c, now) => {
+		if (!c) return 'UPCOMING'
+		const startTime = new Date(+c.startTime).getTime()
+		const endTime = new Date(+c.endTime).getTime()
+
+		// Use explicit votingStartTime/votingEndTime only - no fallback
+		const votingStartTime = c.votingStartTime ? new Date(+c.votingStartTime).getTime() : null
+		const votingEndTime = c.votingEndTime ? new Date(+c.votingEndTime).getTime() : null
+
+		if (now < startTime) return 'UPCOMING'
+		if (now <= endTime) return 'ACTIVE'
+		if (votingStartTime && now < votingStartTime) return 'ACTIVE'
+		if (votingStartTime && votingEndTime && now >= votingStartTime && now <= votingEndTime) return 'VOTING'
+		if (!votingStartTime || !votingEndTime) return 'COMPLETED'
+		return 'COMPLETED'
+	}
+
+	const dynamicStatus = getDynamicStatus(contest, currentTime)
 
 	const sortedSubmissions = [...(contest?.submissions || [])].sort((a, b) => {
 		if (sortBy === 'submittedAt') {
@@ -84,6 +113,11 @@ function ContestViewPage() {
 		)
 	}
 
+	// Calculate countdown
+	const target = getCountdownTarget(contest, dynamicStatus)
+	const seconds = getSecondsRemaining(target, currentTime)
+	const countdown = formatCountdown(seconds)
+
 	return (
 		<div className="bg-gray-900 text-white px-6 py-10">
 			<div className="max-w-3xl mx-auto">
@@ -94,12 +128,17 @@ function ContestViewPage() {
 				</Link>
 				<div className="flex flex-wrap items-start justify-between gap-3 mb-2">
 					<h1 className="text-3xl font-bold">{contest.title}</h1>
-					{contest.status && (
-						<span className="text-xs uppercase tracking-wide bg-gray-800 border border-gray-700 px-3 py-1 rounded-full text-gray-300">
-							{contest.status}
-						</span>
-					)}
+					<span className="text-xs uppercase tracking-wide bg-gray-800 border border-gray-700 px-3 py-1 rounded-full text-gray-300">
+						{dynamicStatus}
+					</span>
 				</div>
+				{countdown && (
+					<span className="text-sm bg-gray-800 border border-gray-700 px-3 py-1 rounded-full text-yellow-400 mb-4 inline-block">
+						{dynamicStatus === 'UPCOMING' && `Starts in ${countdown}`}
+						{dynamicStatus === 'ACTIVE' && `Ends in ${countdown}`}
+						{dynamicStatus === 'VOTING' && `Voting ends in ${countdown}`}
+					</span>
+				)}
 				<p className="text-gray-400 mb-8">
 					{formatDate(contest.startTime)} - {formatDate(contest.endTime)}
 				</p>
@@ -128,9 +167,11 @@ function ContestViewPage() {
 							</dd>
 						</div>
 						<div>
-							<dt className="text-gray-400">Voting Duration</dt>
+							<dt className="text-gray-400">Voting End</dt>
 							<dd className="text-gray-200">
-								{contest.votingDurationHours ?? 48} hours
+								{contest.votingEndTime
+									? new Date(+contest.votingEndTime).toLocaleString()
+									: 'Not set'}
 							</dd>
 						</div>
 						<div>
@@ -149,7 +190,7 @@ function ContestViewPage() {
 				</div>
 
 				<div className="flex flex-col gap-4">
-					{contest.status === 'ACTIVE' && (
+					{dynamicStatus === 'ACTIVE' && (
 						<Link
 							to={`/contests/${contest.id}/submit`}
 							className="bg-white border border-gray-700 text-center text-gray-900 font-medium max-w-48 self-center px-5 py-2.5 mb-6 rounded-lg hover:bg-gray-200">
