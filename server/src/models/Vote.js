@@ -1,39 +1,57 @@
 import mongoose from 'mongoose'
 
 const voteSchema = new mongoose.Schema(
-  {
-    contestId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'Contest',
-      required: true,
-      index: true,
-    },
-    submissionId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'Submission',
-      required: true,
-      index: true,
-    },
-    voterId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'User',
-      required: true,
-      index: true,
-    },
-    points: {
-      type: Number,
-      required: true,
-      min: 1,
-      max: 10,
-    },
-    votedAt: {
-      type: Date,
-      default: Date.now,
-    },
-  },
-  {
-    timestamps: true,
-  }
+	{
+		contestId: {
+			type: mongoose.Schema.Types.ObjectId,
+			ref: 'Contest',
+			required: true,
+			index: true,
+		},
+		submissionId: {
+			type: mongoose.Schema.Types.ObjectId,
+			ref: 'Submission',
+			required: true,
+			index: true,
+		},
+		voterId: {
+			type: mongoose.Schema.Types.ObjectId,
+			ref: 'User',
+			required: true,
+			index: true,
+		},
+		styleScore: {
+			type: Number,
+			required: true,
+			min: 1,
+			max: 5,
+		},
+		creativityScore: {
+			type: Number,
+			required: true,
+			min: 1,
+			max: 5,
+		},
+		storytellingScore: {
+			type: Number,
+			required: true,
+			min: 1,
+			max: 5,
+		},
+		totalScore: {
+			type: Number,
+			required: true,
+			min: 3,
+			max: 15,
+		},
+		votedAt: {
+			type: Date,
+			default: Date.now,
+		},
+	},
+	{
+		timestamps: true,
+	},
 )
 
 voteSchema.index({ submissionId: 1, voterId: 1 }, { unique: true })

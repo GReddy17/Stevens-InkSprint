@@ -87,6 +87,8 @@ function SubmissionFormPage() {
 						content: submissionContent,
 					},
 				},
+				refetchQueries: ['GetContest'],
+				awaitRefetchQueries: true,
 			})
 
 			const newSubmissionId = data.createSubmission.id
