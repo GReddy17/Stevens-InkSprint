@@ -1,5 +1,6 @@
 import { gql, useMutation } from '@apollo/client'
 import ContestForm from '../components/ContestForm'
+import { useNavigate } from 'react-router-dom'
 
 const CREATE_CONTEST = gql`
 	mutation CreateContest($input: CreateContestInput!) {
@@ -21,6 +22,7 @@ const CREATE_CONTEST = gql`
 `
 
 function ContestFormPage() {
+	const navigate = useNavigate()
 	const [createContest, { loading, error, data }] = useMutation(CREATE_CONTEST)
 
 	const handleCreateContest = async (payload) => {
@@ -44,6 +46,8 @@ function ContestFormPage() {
 				refetchQueries: ['GetContests'],
 				awaitRefetchQueries: true,
 			})
+
+			navigate('/')
 		} catch (err) {
 			console.error('Create contest failed:', err.message)
 		}

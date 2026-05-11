@@ -120,8 +120,8 @@ const seed = async () => {
 				endTime: new Date(now + 2 * day),
 			},
 			VOTING: {
-				startTime: new Date(now - 5 * day),
-				endTime: new Date(now - 1 * day),
+				startTime: new Date(now - 3 * day),
+				endTime: new Date(now - 6 * 60 * 60 * 1000),
 			},
 			COMPLETED: {
 				startTime: new Date(now - 10 * day),
