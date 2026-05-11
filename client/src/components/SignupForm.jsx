@@ -1,11 +1,12 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 
-const SignupForm = ({ onSubmit }) => {
+const SignupForm = ({ onSubmit, submitError }) => {
 	const [formData, setFormData] = useState({
 		email: '',
 		displayName: '',
 		password: '',
+		confirmPassword: '',
 	})
 
 	const [errors, setErrors] = useState({})
@@ -35,6 +36,12 @@ const SignupForm = ({ onSubmit }) => {
 			newErrors.password = 'Password is required'
 		} else if (formData.password.length < 6) {
 			newErrors.password = 'Password must be at least 6 characters'
+		}
+
+		if (!formData.confirmPassword) {
+			newErrors.confirmPassword = 'Please confirm your password'
+		} else if (formData.confirmPassword !== formData.password) {
+			newErrors.confirmPassword = 'Passwords do not match'
 		}
 
 		return newErrors
@@ -110,6 +117,27 @@ const SignupForm = ({ onSubmit }) => {
 					<p className="text-red-400 text-sm mt-1">{errors.password}</p>
 				)}
 			</div>
+
+			{/* Confirm Password */}
+			<div>
+				<label className="block mb-2 text-sm font-medium text-gray-300">
+					Confirm Password
+				</label>
+				<input
+					type="password"
+					name="confirmPassword"
+					value={formData.confirmPassword}
+					onChange={handleChange}
+					className="w-full rounded-lg bg-gray-900 border border-gray-700 px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-gray-500"
+				/>
+				{errors.confirmPassword && (
+					<p className="text-red-400 text-sm mt-1">{errors.confirmPassword}</p>
+				)}
+			</div>
+
+			{submitError && (
+				<p className="text-red-400 text-sm text-center">{submitError}</p>
+			)}
 
 			{/* Submit */}
 			<button

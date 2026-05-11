@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 
-const LoginForm = ({ onSubmit }) => {
+const LoginForm = ({ onSubmit, submitError }) => {
 	const [formData, setFormData] = useState({
 		email: '',
 		password: '',
@@ -79,7 +79,9 @@ const LoginForm = ({ onSubmit }) => {
 					<p className="text-red-400 text-sm mt-1">{errors.password}</p>
 				)}
 			</div>
-
+			{submitError && (
+				<p className="text-red-400 text-sm text-center">{submitError}</p>
+			)}
 			{/* Submit */}
 			<button
 				type="submit"

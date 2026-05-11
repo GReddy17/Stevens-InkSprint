@@ -28,14 +28,24 @@ function getContestStatus(contest, now) {
 	const endTime = new Date(+contest.endTime).getTime()
 
 	// Use explicit votingStartTime/votingEndTime only - no fallback
-	const votingStartTime = contest.votingStartTime ? new Date(+contest.votingStartTime).getTime() : null
-	const votingEndTime = contest.votingEndTime ? new Date(+contest.votingEndTime).getTime() : null
+	const votingStartTime = contest.votingStartTime
+		? new Date(+contest.votingStartTime).getTime()
+		: null
+	const votingEndTime = contest.votingEndTime
+		? new Date(+contest.votingEndTime).getTime()
+		: null
 
 	if (now < startTime) return 'UPCOMING'
 	if (now <= endTime) return 'ACTIVE'
 	// Only enter VOTING if explicit voting times are set
 	if (votingStartTime && now < votingStartTime) return 'ACTIVE'
-	if (votingStartTime && votingEndTime && now >= votingStartTime && now <= votingEndTime) return 'VOTING'
+	if (
+		votingStartTime &&
+		votingEndTime &&
+		now >= votingStartTime &&
+		now <= votingEndTime
+	)
+		return 'VOTING'
 	// If no explicit voting times → go directly to COMPLETED
 	if (!votingStartTime || !votingEndTime) return 'COMPLETED'
 	return 'COMPLETED'
@@ -93,6 +103,11 @@ function HomePage() {
 					are selected.
 				</div>
 				<Link
+					to="/leaderboard/"
+					className="block text-center max-w-md bg-yellow-600 text-white font-medium mx-auto my-6 py-2 rounded-lg hover:bg-yellow-700 transition">
+					🏆 Leaderboard
+				</Link>
+				<Link
 					to="/contests/new"
 					className="block text-center max-w-md bg-white text-gray-900 font-medium mx-auto my-6 py-2 rounded-lg hover:bg-gray-200 transition">
 					Create a Contest
@@ -106,14 +121,9 @@ function HomePage() {
 					</div>
 					<div className="flex gap-4">
 						<Link
-							to="/leaderboard/"
-							className="block text-center w-42 bg-yellow-600 text-white font-medium my-2 py-2 rounded-lg hover:bg-yellow-700 transition">
-							🏆 Leaderboard
-						</Link>
-						<Link
 							to={`/contests/`}
 							className="block text-center w-42 bg-white text-gray-900 font-medium my-2 py-2 rounded-lg hover:bg-gray-200 transition">
-							Browse All
+							Browse All Contests
 						</Link>
 					</div>
 				</div>

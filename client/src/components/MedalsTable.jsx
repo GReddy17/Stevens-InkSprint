@@ -1,3 +1,5 @@
+import { Link } from 'react-router-dom'
+
 function MedalsTable({ userMedals, filteredMedals, medalsPage, setMedalsPage, medalsTotalPages, medalsFilter, setMedalsFilter, medalsSort, handleSort, S, downloadCert, API_URL }) {
 	const medalsPaginated = filteredMedals.slice((medalsPage - 1) * 10, medalsPage * 10)
 
@@ -60,7 +62,9 @@ function MedalsTable({ userMedals, filteredMedals, medalsPage, setMedalsPage, me
 									{e.rank}
 								</span>
 							</td>
-							<td className="px-4 py-3 font-semibold">{e.user?.displayName || e.user?.email || '?'}</td>
+							<td className="px-4 py-3 font-semibold">
+								<Link to={`/profiles/${e.user.id}`}>{e.user?.displayName || e.user?.email || '?'}</Link>
+								</td>
 							<td className="px-4 py-3 text-center text-xl">{e.gold}</td>
 							<td className="px-4 py-3 text-center text-xl">{e.silver}</td>
 							<td className="px-4 py-3 text-center text-xl">{e.bronze}</td>
@@ -70,7 +74,7 @@ function MedalsTable({ userMedals, filteredMedals, medalsPage, setMedalsPage, me
 									<div key={j} className="flex gap-2 mb-1">
 										<span className="text-sm text-gray-400">{w.contestTitle}</span>
 										{w.certificateUrl && (
-											<button onClick={() => downloadCertHandler(w.certificateUrl)} className="text-green-400 text-xs">
+											<button onClick={() => downloadCertHandler(w.certificateUrl)} className="text-green-400 text-xs hover:cursor-pointer">
 												Download
 											</button>
 										)}

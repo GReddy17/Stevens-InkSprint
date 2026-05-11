@@ -1,3 +1,5 @@
+import { Link } from 'react-router-dom'
+
 function WinnersTable({ winners, filteredWinners, winnersPage, setWinnersPage, winnersTotalPages, winnersFilter, setWinnersFilter, winnersSort, handleSort, S }) {
 	const winnersPaginated = filteredWinners.slice((winnersPage - 1) * 10, winnersPage * 10)
 
@@ -30,7 +32,10 @@ function WinnersTable({ winners, filteredWinners, winnersPage, setWinnersPage, w
 					{winnersPaginated.map((w, i) => (
 						<tr key={i} className="border-t border-gray-700">
 							<td className="px-4 py-3">{w.contestTitle}</td>
-							<td className="px-4 py-3 font-semibold">{w.author?.displayName || w.author?.email || '?'}</td>
+							<td className="px-4 py-3 font-semibold">
+								
+								<Link to={`/profiles/${w.author.id}`}>{w.author?.displayName || w.author?.email || '?'}</Link>
+							</td>
 						</tr>
 					))}
 				</tbody>
