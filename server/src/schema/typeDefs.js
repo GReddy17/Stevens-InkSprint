@@ -33,7 +33,8 @@ export const typeDefs = `#graphql
     votingType: VotingType!
     votingGroupMemberIds: [ID!]!
     votingGroupMembers: [User!]!
-    votingDurationHours: Int!
+    votingStartTime: String
+    votingEndTime: String
     wordMin: Int
     wordMax: Int
     createdAt: String!
@@ -93,7 +94,8 @@ export const typeDefs = `#graphql
     endTime: String!
     votingType: VotingType
     votingGroupMemberIds: [ID!]
-    votingDurationHours: Int
+    votingStartTime: String
+    votingEndTime: String
     wordMin: Int
     wordMax: Int
   }
@@ -106,7 +108,8 @@ export const typeDefs = `#graphql
     endTime: String
     votingType: VotingType
     votingGroupMemberIds: [ID!]
-    votingDurationHours: Int
+    votingStartTime: String
+    votingEndTime: String
     wordMin: Int
     wordMax: Int
   }

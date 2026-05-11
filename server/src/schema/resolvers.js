@@ -160,6 +160,22 @@ export const resolvers = {
 				_id: { $in: parent.votingGroupMemberIds || [] },
 			})
 		},
+		startTime: (parent) =>
+			parent.startTime instanceof Date
+				? parent.startTime.getTime().toString()
+				: parent.startTime?.toString(),
+		endTime: (parent) =>
+			parent.endTime instanceof Date
+				? parent.endTime.getTime().toString()
+				: parent.endTime?.toString(),
+		votingStartTime: (parent) =>
+			parent.votingStartTime instanceof Date
+				? parent.votingStartTime.getTime().toString()
+				: parent.votingStartTime?.toString(),
+		votingEndTime: (parent) =>
+			parent.votingEndTime instanceof Date
+				? parent.votingEndTime.getTime().toString()
+				: parent.votingEndTime?.toString(),
 	},
 
 	User: {
@@ -264,6 +280,8 @@ export const resolvers = {
 				votingType,
 				votingGroupMemberIds,
 				votingDurationHours,
+				votingStartTime,
+				votingEndTime,
 				wordMin,
 				wordMax,
 			} = input
@@ -296,6 +314,13 @@ export const resolvers = {
 				}
 			}
 
+			let effectiveVotingDurationHours = votingDurationHours
+			if (votingStartTime && votingEndTime) {
+				const diffMs = new Date(votingEndTime) - new Date(votingStartTime)
+				const diffHours = diffMs / (1000 * 60 * 60)
+				effectiveVotingDurationHours = diffHours >= 1 ? Math.round(diffHours) : Math.ceil(diffHours)
+			}
+
 			const contest = await new Contest({
 				title: title.trim(),
 				prompt: prompt.trim(),
@@ -305,7 +330,9 @@ export const resolvers = {
 				createdBy,
 				votingType: validVotingType,
 				votingGroupMemberIds: votingGroupMemberIds || [],
-				votingDurationHours: votingDurationHours || 48,
+				votingDurationHours: effectiveVotingDurationHours || null,
+				votingStartTime: votingStartTime ? new Date(votingStartTime) : null,
+				votingEndTime: votingEndTime ? new Date(votingEndTime) : null,
 				wordMin: wordMin || null,
 				wordMax: wordMax || null,
 			}).save()
@@ -348,6 +375,10 @@ export const resolvers = {
 			if (input.votingType) update.votingType = newVotingType
 			if (input.votingDurationHours)
 				update.votingDurationHours = input.votingDurationHours
+			if (input.votingStartTime !== undefined)
+				update.votingStartTime = input.votingStartTime ? new Date(input.votingStartTime) : null
+			if (input.votingEndTime !== undefined)
+				update.votingEndTime = input.votingEndTime ? new Date(input.votingEndTime) : null
 			if (input.wordMin !== undefined || input.wordMax !== undefined) {
 				validateWordLimits(
 					input.wordMin ?? contest.wordMin,
