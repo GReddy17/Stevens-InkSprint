@@ -86,9 +86,17 @@ export const resolvers = {
 			const validStatus = validateContestStatus(status)
 			const contests = await Contest.find({}).sort({ createdAt: -1 })
 
-			return contests.filter(
+			const filtered = contests.filter(
 				(contest) => getContestStatus(contest) === validStatus,
 			)
+
+			if (validStatus === 'COMPLETED') {
+				await Promise.all(
+					filtered.map((contest) => finalizeContestIfNeeded(contest)),
+				)
+			}
+
+			return filtered
 		},
 
 		// Submissions
@@ -265,7 +273,6 @@ export const resolvers = {
 			return user
 		},
 
-
 		// Create contest
 		createContest: async (_, { input }, context) => {
 			if (!context.user)
@@ -291,6 +298,29 @@ export const resolvers = {
 			const { start, end } = validateDates(startTime, endTime)
 			validateWordLimits(wordMin, wordMax)
 
+			const parsedVotingStartTime = votingStartTime
+				? new Date(votingStartTime)
+				: null
+			const parsedVotingEndTime = votingEndTime ? new Date(votingEndTime) : null
+
+			if (parsedVotingStartTime && parsedVotingStartTime < end) {
+				throw new Error('Voting start time must be after the contest end time')
+			}
+
+			if (
+				parsedVotingStartTime &&
+				parsedVotingEndTime &&
+				parsedVotingEndTime <= parsedVotingStartTime
+			) {
+				throw new Error('Voting end time must be after voting start time')
+			}
+
+			if (!parsedVotingStartTime && parsedVotingEndTime) {
+				throw new Error(
+					'Voting start time is required when voting end time is set',
+				)
+			}
+
 			const createdBy = context.user.id
 
 			const validVotingType = votingType
@@ -315,10 +345,11 @@ export const resolvers = {
 			}
 
 			let effectiveVotingDurationHours = votingDurationHours
-			if (votingStartTime && votingEndTime) {
-				const diffMs = new Date(votingEndTime) - new Date(votingStartTime)
+			if (parsedVotingStartTime && parsedVotingEndTime) {
+				const diffMs = parsedVotingEndTime - parsedVotingStartTime
 				const diffHours = diffMs / (1000 * 60 * 60)
-				effectiveVotingDurationHours = diffHours >= 1 ? Math.round(diffHours) : Math.ceil(diffHours)
+				effectiveVotingDurationHours =
+					diffHours >= 1 ? Math.round(diffHours) : Math.ceil(diffHours)
 			}
 
 			const contest = await new Contest({
@@ -331,8 +362,8 @@ export const resolvers = {
 				votingType: validVotingType,
 				votingGroupMemberIds: votingGroupMemberIds || [],
 				votingDurationHours: effectiveVotingDurationHours || null,
-				votingStartTime: votingStartTime ? new Date(votingStartTime) : null,
-				votingEndTime: votingEndTime ? new Date(votingEndTime) : null,
+				votingStartTime: parsedVotingStartTime,
+				votingEndTime: parsedVotingEndTime,
 				wordMin: wordMin || null,
 				wordMax: wordMax || null,
 			}).save()
@@ -360,6 +391,7 @@ export const resolvers = {
 			if (input.title) update.title = validateString(input.title, 'title')
 			if (input.prompt) update.prompt = validateString(input.prompt, 'prompt')
 			if (input.rules !== undefined) update.rules = input.rules?.trim() || null
+
 			if (input.startTime || input.endTime) {
 				const { start, end } = validateDates(
 					input.startTime || contest.startTime,
@@ -368,6 +400,7 @@ export const resolvers = {
 				if (input.startTime) update.startTime = start
 				if (input.endTime) update.endTime = end
 			}
+
 			const newVotingType = input.votingType
 				? validateVotingType(input.votingType)
 				: contest.votingType
@@ -376,9 +409,42 @@ export const resolvers = {
 			if (input.votingDurationHours)
 				update.votingDurationHours = input.votingDurationHours
 			if (input.votingStartTime !== undefined)
-				update.votingStartTime = input.votingStartTime ? new Date(input.votingStartTime) : null
+				update.votingStartTime = input.votingStartTime
+					? new Date(input.votingStartTime)
+					: null
 			if (input.votingEndTime !== undefined)
-				update.votingEndTime = input.votingEndTime ? new Date(input.votingEndTime) : null
+				update.votingEndTime = input.votingEndTime
+					? new Date(input.votingEndTime)
+					: null
+
+			const nextEndTime = update.endTime || contest.endTime
+			const nextVotingStartTime =
+				input.votingStartTime !== undefined
+					? update.votingStartTime
+					: contest.votingStartTime
+			const nextVotingEndTime =
+				input.votingEndTime !== undefined
+					? update.votingEndTime
+					: contest.votingEndTime
+
+			if (nextVotingStartTime && nextVotingStartTime < nextEndTime) {
+				throw new Error('Voting start time must be after the contest end time')
+			}
+
+			if (
+				nextVotingStartTime &&
+				nextVotingEndTime &&
+				nextVotingEndTime <= nextVotingStartTime
+			) {
+				throw new Error('Voting end time must be after voting start time')
+			}
+
+			if (!nextVotingStartTime && nextVotingEndTime) {
+				throw new Error(
+					'Voting start time is required when voting end time is set',
+				)
+			}
+
 			if (input.wordMin !== undefined || input.wordMax !== undefined) {
 				validateWordLimits(
 					input.wordMin ?? contest.wordMin,
@@ -387,6 +453,7 @@ export const resolvers = {
 				if (input.wordMin !== undefined) update.wordMin = input.wordMin
 				if (input.wordMax !== undefined) update.wordMax = input.wordMax
 			}
+
 			if (input.votingGroupMemberIds !== undefined) {
 				if (input.votingGroupMemberIds.length > 0) {
 					const users = await User.find({
@@ -424,6 +491,7 @@ export const resolvers = {
 				{ $set: update },
 				{ returnDocument: 'after' },
 			)
+
 			return updated
 		},
 
@@ -640,7 +708,7 @@ export const resolvers = {
 				)
 			}
 
-			const submissions = await finalizeContestIfNeeded(contest)
+			const { submissions } = await finalizeContestIfNeeded(contest)
 
 			return { contest, submissions }
 		},

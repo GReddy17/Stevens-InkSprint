@@ -8,14 +8,20 @@ export function getContestStatus(contest) {
 	const startTime = new Date(contest.startTime)
 	const endTime = new Date(contest.endTime)
 
-	const votingStartTime = contest.votingStartTime ? new Date(contest.votingStartTime) : null
-	const votingEndTime = contest.votingEndTime ? new Date(contest.votingEndTime) : null
+	const votingStartTime = contest.votingStartTime
+		? new Date(contest.votingStartTime)
+		: endTime
+
+	const votingDurationHours = contest.votingDurationHours || 48
+
+	const votingEndTime = contest.votingEndTime
+		? new Date(contest.votingEndTime)
+		: new Date(endTime.getTime() + votingDurationHours * 60 * 60 * 1000)
 
 	if (now < startTime) return 'UPCOMING'
 	if (now <= endTime) return 'ACTIVE'
-	if (votingStartTime && now < votingStartTime) return 'ACTIVE'
-	if (votingStartTime && votingEndTime && now >= votingStartTime && now <= votingEndTime) return 'VOTING'
-	if (!votingStartTime || !votingEndTime) return 'COMPLETED'
+	if (now < votingStartTime) return 'ACTIVE'
+	if (now <= votingEndTime) return 'VOTING'
 	return 'COMPLETED'
 }
 
@@ -24,13 +30,13 @@ export const finalizeContestIfNeeded = async (contest) => {
 	const status = getContestStatus(contest)
 
 	if (status !== 'COMPLETED') {
-		return []
+		return { finalized: false, submissions: [] }
 	}
 
 	const submissions = await Submission.find({ contestId: contest._id })
 
 	if (submissions.length === 0) {
-		return []
+		return { finalized: false, submissions: [] }
 	}
 
 	const alreadyFinalized = submissions.every(
@@ -38,7 +44,7 @@ export const finalizeContestIfNeeded = async (contest) => {
 	)
 
 	if (alreadyFinalized) {
-		return submissions
+		return { finalized: false, submissions }
 	}
 
 	submissions.sort((a, b) => {
@@ -55,7 +61,7 @@ export const finalizeContestIfNeeded = async (contest) => {
 		day: 'numeric',
 	})
 
-	return await Promise.all(
+	const updated = await Promise.all(
 		submissions.map(async (sub, index) => {
 			const placement = index + 1
 			const author = await User.findById(sub.authorId)
@@ -82,4 +88,6 @@ export const finalizeContestIfNeeded = async (contest) => {
 			)
 		}),
 	)
+
+	return { finalized: true, submissions: updated }
 }
