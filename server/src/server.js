@@ -128,3 +128,27 @@ await new Promise((resolve) => {
 });
 
 console.log(`🚀 Server ready at http://localhost:${port}/graphql`);
+
+import Contest from './models/Contest.js';
+import { finalizeContestIfNeeded } from './utils/helpers.js';
+
+setInterval(async () => {
+  try {
+    const now = new Date();
+    const contests = await Contest.find({
+      endTime: { $lt: now },
+    });
+
+    for (const contest of contests) {
+      // Only finalize if explicit votingEndTime is set
+      if (!contest.votingEndTime) continue;
+      const votingEndTime = new Date(contest.votingEndTime);
+      if (now >= votingEndTime) {
+        await finalizeContestIfNeeded(contest);
+        console.log(`Auto-finalized contest: ${contest.title}`);
+      }
+    }
+  } catch (err) {
+    console.error('Auto-finalization error:', err);
+  }
+}, 60000);
