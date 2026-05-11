@@ -11,9 +11,7 @@ import SignupPage from './pages/SignupPage'
 import LoginPage from './pages/LoginPage'
 import NotFoundPage from './pages/NotFoundPage'
 import LeaderboardPage from './pages/LeaderboardPage'
-// import DevPage from './pages/DevPage'
 import ProfileViewPage from './pages/ProfileViewPage'
-import ProfileFormPage from './pages/ProfileFormPage'
 
 function App() {
   return (
@@ -30,9 +28,7 @@ function App() {
           <Route path="/login/" element={<LoginPage />} />
           <Route path="/signup/" element={<SignupPage />} />
           <Route path="/leaderboard/" element={<LeaderboardPage />} />
-          {/* <Route path='/dev' element={<DevPage />} /> */}
           <Route path='/profiles/:userId' element={<ProfileViewPage />} />
-          <Route path='/profile/edit' element={<ProfileFormPage />} />
           <Route path='*' element={<NotFoundPage />} />
         </Routes>
       </main>
